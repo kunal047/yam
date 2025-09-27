@@ -4,12 +4,12 @@ transaction(
     nationality: String,
     nullifier: String
 ) {
-    execute {
+    prepare(acct: auth(Storage, Keys, Contracts, Inbox, Capabilities) &Account) {
         // Verify seller with Self.xyz data
         YAMListings.verifySeller(
             nationality: nationality,
             nullifier: nullifier,
-            seller: self.account.address
+            seller: acct.address
         )
         
         log("Seller verified with nationality: ".concat(nationality))

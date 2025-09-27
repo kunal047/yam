@@ -1,6 +1,6 @@
 import FungibleToken from 0x9a0766d93b6608b7
 import FlowToken from 0x7e60df042a9c0868
-        import YAMListings from 0x1f67c2e66c7e3ee3
+import YAMListings from 0x1f67c2e66c7e3ee3
 
 transaction(
     itemName: String,
@@ -13,13 +13,7 @@ transaction(
     sellerNationality: String,
     sellerNullifier: String
 ) {
-    let listingId: UInt64
-    
-    prepare(acct: AuthAccount) {
-        // No special preparation needed
-    }
-    
-    execute {
+    prepare(acct: auth(Storage, Keys, Contracts, Inbox, Capabilities) &Account) {
         // First verify the seller
         YAMListings.verifySeller(
             nationality: sellerNationality,
@@ -29,7 +23,7 @@ transaction(
         
         // Then create the listing using contract's admin resource
         let admin = YAMListings.getAdmin()
-        self.listingId = admin.createListing(
+        let listingId = admin.createListing(
             itemName: itemName,
             itemDesc: itemDesc,
             price: price,
@@ -41,6 +35,6 @@ transaction(
             seller: acct.address
         )
         
-        log("Listing created with ID: ".concat(self.listingId.toString()))
+        log("Listing created with ID: ".concat(listingId.toString()))
     }
 }

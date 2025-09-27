@@ -11,7 +11,7 @@ transaction(
     let buyerVault: &FlowToken.Vault
     let payment: @FungibleToken.Vault
     
-    prepare(acct: AuthAccount) {
+    prepare(acct: auth(Storage, Keys, Contracts, Inbox, Capabilities) &Account) {
         // Get buyer's Flow token vault
         self.buyerVault = acct.borrow<&FlowToken.Vault>(from: FlowToken.VaultStoragePath)
             ?? panic("Flow token vault not found")

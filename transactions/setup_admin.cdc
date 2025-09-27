@@ -2,7 +2,7 @@ import FungibleToken from 0x9a0766d93b6608b7
 import FlowToken from 0x7e60df042a9c0868
 
 transaction {
-    prepare(acct: AuthAccount) {
+    prepare(acct: auth(Storage, Keys, Contracts, Inbox, Capabilities) &Account) {
         log("Setting up Flow token vault...")
         
         // Check if vault already exists

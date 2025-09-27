@@ -7,7 +7,7 @@ transaction(listingId: UInt64) {
     let winnerVault: &FlowToken.Vault
     let payment: @FungibleToken.Vault
     
-    prepare(acct: AuthAccount) {
+    prepare(acct: auth(Storage, Keys, Contracts, Inbox, Capabilities) &Account) {
         // Get winner's Flow token vault
         self.winnerVault = acct.borrow<&FlowToken.Vault>(from: FlowToken.VaultStoragePath)
             ?? panic("Flow token vault not found")
