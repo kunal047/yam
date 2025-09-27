@@ -14,7 +14,7 @@ A web3 marketplace built on Flow blockchain featuring fair raffles and direct pu
 
 - **Frontend**: Next.js 15 + TypeScript + Tailwind CSS
 - **Blockchain**: Flow Testnet (@onflow/fcl)
-- **Identity**: Self.xyz SDK (mock implementation included)
+- **Identity**: Self.xyz SDK (@selfxyz/qrcode, @selfxyz/core, ethers)
 - **Styling**: Purple/Orange YAM theme with responsive design
 
 ## 🏗️ Project Structure
@@ -92,8 +92,11 @@ Currently uses mock data for:
 - ⏳ Smart contract deployment scripts
 
 ### Self.xyz Integration
-- ✅ Mock identity verification hook
-- ⏳ Real Self.xyz SDK integration (package installation needed)
+- ✅ Real Self.xyz SDK integration (@selfxyz/qrcode, @selfxyz/core)
+- ✅ QR code generation and verification
+- ✅ Backend verification API route
+- ✅ Modal-based verification flow
+- ✅ Scope and configuration matching between frontend/backend
 
 ## 🚀 Deployment
 

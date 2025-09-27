@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import FlowProvider from "@/components/FlowProvider";
+import { SelfXYZProvider } from "@/contexts/SelfXYZContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,9 +29,11 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <FlowProvider>
-          {children}
-        </FlowProvider>
+        <SelfXYZProvider>
+          <FlowProvider>
+            {children}
+          </FlowProvider>
+        </SelfXYZProvider>
       </body>
     </html>
   );

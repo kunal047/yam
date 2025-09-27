@@ -1,5 +1,6 @@
 import Link from "next/link";
 import WalletConnect from "@/components/WalletConnect";
+import SelfXYZButton from "@/components/SelfXYZButton";
 
 export default function Home() {
   return (
@@ -24,6 +25,7 @@ export default function Home() {
               <Link href="/profile" className="text-white hover:text-orange-300 transition-colors">
                 Profile
               </Link>
+              <SelfXYZButton />
               <WalletConnect />
             </div>
           </div>

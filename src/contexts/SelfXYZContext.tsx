@@ -58,21 +58,23 @@ export function SelfXYZProvider({ children }: SelfXYZProviderProps) {
   };
 
   const handleVerificationSuccess = (result: SelfVerificationResult) => {
+    // Use a stable timestamp to avoid hydration mismatch
+    const now = new Date().toISOString();
     setVerification({
       isVerified: true,
-      did: `did:self:${Date.now()}`, // Generate a mock DID
-      age: result.credentialSubject?.age || 25,
-      country: result.credentialSubject?.nationality || "US",
-      uniqueId: `self_xyz_${Date.now()}`,
-      proofs: [
+      did: result.credentialSubject ? `did:self:${now}` : undefined,
+      age: result.credentialSubject?.age,
+      country: result.credentialSubject?.nationality,
+      uniqueId: result.credentialSubject ? `self_xyz_${now}` : undefined,
+      proofs: result.credentialSubject ? [
         {
           type: "AgeVerification",
-          value: result.credentialSubject?.age || 25,
+          value: result.credentialSubject.age,
           issuer: "self.xyz"
         },
         {
-          type: "CountryVerification",
-          value: result.credentialSubject?.nationality || "US",
+          type: "CountryVerification", 
+          value: result.credentialSubject.nationality,
           issuer: "self.xyz"
         },
         {
@@ -80,8 +82,8 @@ export function SelfXYZProvider({ children }: SelfXYZProviderProps) {
           value: true,
           issuer: "self.xyz"
         }
-      ],
-      timestamp: new Date(),
+      ] : undefined,
+      timestamp: new Date(now),
       credentialSubject: result.credentialSubject,
     });
     setLoading(false);

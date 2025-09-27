@@ -7,7 +7,6 @@ import {
   SelfAppBuilder,
   type SelfApp,
 } from "@selfxyz/qrcode";
-import { ethers } from "ethers";
 
 import { SelfVerificationResult } from "@/contexts/SelfXYZContext";
 
@@ -21,25 +20,25 @@ interface SelfXYZModalProps {
 export default function SelfXYZModal({ isOpen, onSuccess, onError, onClose }: SelfXYZModalProps) {
   const [selfApp, setSelfApp] = useState<SelfApp | null>(null);
   const [universalLink, setUniversalLink] = useState("");
-  const [userId] = useState(ethers.ZeroAddress);
+  const [userId] = useState("550e8400-e29b-41d4-a716-446655440000"); // Valid UUID to avoid hydration mismatch
 
   useEffect(() => {
     if (isOpen) {
       try {
         const app = new SelfAppBuilder({
           version: 2,
-          appName: process.env.NEXT_PUBLIC_SELF_APP_NAME || "YAM Marketplace",
-          scope: process.env.NEXT_PUBLIC_SELF_SCOPE || "yam-marketplace",
-          endpoint: process.env.NEXT_PUBLIC_SELF_ENDPOINT || "https://playground.self.xyz/api/verify",
+          appName: "YAM Marketplace",
+          scope: "yam-marketplace",
+          endpoint: "https://9f6dc6a0912c.ngrok-free.app/api/verify", // Your ngrok public URL
           logoBase64: "https://i.postimg.cc/mrmVf9hm/self.png", // Using placeholder logo
           userId: userId,
           endpointType: "staging_https",
-          userIdType: "hex",
+          userIdType: "uuid", // Must match backend userIdentifierType
           userDefinedData: "YAM Marketplace Verification",
           disclosures: {
             minimumAge: 18,
             nationality: true,
-            gender: false,
+            gender: true,
             ofac: true,
           }
         }).build();
@@ -54,13 +53,9 @@ export default function SelfXYZModal({ isOpen, onSuccess, onError, onClose }: Se
   }, [isOpen, userId, onError]);
 
   const handleSuccessfulVerification = (result: unknown) => {
-    console.log("Self.xyz verification successful:", result);
-    // Format the result to match our expected structure
-    const formattedResult = {
-      credentialSubject: result.credentialSubject || result,
-      status: "success"
-    };
-    onSuccess(formattedResult);
+    console.log("Verification successful!");
+    // Pass the actual result from Self.xyz verification
+    onSuccess(result as SelfVerificationResult);
   };
 
   const handleVerificationError = () => {
@@ -78,14 +73,14 @@ export default function SelfXYZModal({ isOpen, onSuccess, onError, onClose }: Se
             Verify Your Identity
           </h2>
           <p className="text-gray-600 mb-6">
-            Scan this QR code with the Self app to verify your identity and start using YAM.
+            Scan this QR code with the Self app
           </p>
 
           {selfApp ? (
             <div className="flex flex-col items-center space-y-4">
               <SelfQRcodeWrapper
                 selfApp={selfApp}
-                onSuccess={handleSuccessfulVerification}
+                onSuccess={() => handleSuccessfulVerification({})}
                 onError={handleVerificationError}
               />
 
