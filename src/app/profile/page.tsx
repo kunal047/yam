@@ -24,8 +24,8 @@ export default function ProfilePage() {
                 <span className="text-gray-900 font-bold text-xl">YAM</span>
               </Link>
               <div className="flex space-x-6 items-center">
-                <Link href="/raffles" className="text-gray-600 hover:text-purple-600 transition-colors">
-                  Raffles
+                <Link href="/buy" className="text-gray-600 hover:text-purple-600 transition-colors">
+                  Buy
                 </Link>
                 <Link href="/sell" className="text-gray-600 hover:text-purple-600 transition-colors">
                   Sell
@@ -73,8 +73,8 @@ export default function ProfilePage() {
               <span className="text-gray-900 font-bold text-xl">YAM</span>
             </Link>
             <div className="flex space-x-6 items-center">
-              <Link href="/raffles" className="text-gray-600 hover:text-purple-600 transition-colors">
-                Raffles
+              <Link href="/buy" className="text-gray-600 hover:text-purple-600 transition-colors">
+                Buy
               </Link>
               <Link href="/sell" className="text-gray-600 hover:text-purple-600 transition-colors">
                 Sell

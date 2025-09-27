@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useSelfXYZContext } from "@/contexts/SelfXYZContext";
 import SelfXYZButton from "@/components/SelfXYZButton";
 import WalletConnect from "@/components/WalletConnect";
@@ -10,14 +11,20 @@ import CreateListingForm from "@/components/CreateListingForm";
 
 export default function SellPage() {
   const { isLoggedIn, verification } = useSelfXYZContext();
+  const router = useRouter();
   const [showForm, setShowForm] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
-  const handleFormSuccess = (listingId: string) => {
+  const handleFormSuccess = (listingId: string, transactionId: string) => {
     setSuccessMessage(`Listing created successfully! ID: ${listingId}`);
     setShowForm(false);
     setErrorMessage("");
+    
+    // Navigate to listing detail view after a short delay
+    setTimeout(() => {
+      router.push(`/listings/${listingId}?tx=${transactionId}`);
+    }, 2000);
   };
 
   const handleFormError = (error: string) => {
@@ -39,8 +46,8 @@ export default function SellPage() {
                 <span className="text-gray-900 font-bold text-xl">YAM</span>
               </Link>
               <div className="flex space-x-6 items-center">
-                <Link href="/raffles" className="text-gray-600 hover:text-purple-600 transition-colors">
-                  Raffles
+                <Link href="/buy" className="text-gray-600 hover:text-purple-600 transition-colors">
+                  Buy
                 </Link>
                 <Link href="/sell" className="text-purple-600 font-medium">
                   Sell
@@ -68,9 +75,16 @@ export default function SellPage() {
 
           {successMessage && (
             <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">
-              <div className="flex items-center space-x-2">
-                <span className="text-green-600">✅</span>
-                <span className="text-green-800">{successMessage}</span>
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <span className="text-green-600">✅</span>
+                  <span className="text-green-800 font-semibold">Listing Created Successfully!</span>
+                </div>
+                <div className="text-sm text-green-700 space-y-1">
+                  <p><strong>Listing ID:</strong> {successMessage.split('ID: ')[1]}</p>
+                  <p><strong>Transaction:</strong> Successfully processed on Flow testnet</p>
+                  <p className="text-green-600">Redirecting to listing details...</p>
+                </div>
               </div>
             </div>
           )}
@@ -106,8 +120,8 @@ export default function SellPage() {
               <span className="text-gray-900 font-bold text-xl">YAM</span>
             </Link>
             <div className="flex space-x-6 items-center">
-              <Link href="/raffles" className="text-gray-600 hover:text-purple-600 transition-colors">
-                Raffles
+              <Link href="/buy" className="text-gray-600 hover:text-purple-600 transition-colors">
+                Buy
               </Link>
               <Link href="/sell" className="text-purple-600 font-medium">
                 Sell

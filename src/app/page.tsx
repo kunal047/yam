@@ -16,8 +16,8 @@ export default function Home() {
               <span className="text-white font-bold text-xl">YAM</span>
             </div>
             <div className="flex space-x-6 items-center">
-              <Link href="/raffles" className="text-white hover:text-orange-300 transition-colors">
-                Raffles
+              <Link href="/buy" className="text-white hover:text-orange-300 transition-colors">
+                Buy
               </Link>
               <Link href="/sell" className="text-white hover:text-orange-300 transition-colors">
                 Sell
@@ -45,10 +45,10 @@ export default function Home() {
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Link
-              href="/raffles"
+              href="/buy"
               className="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-8 rounded-lg transition-colors text-lg"
             >
-              🎰 Enter Raffles
+              🛒 Browse Listings
             </Link>
             <Link
               href="/sell"

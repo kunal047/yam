@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { useSelfXYZContext } from "@/contexts/SelfXYZContext";
 import { useFlow } from "@/hooks/useFlow";
 import { useListings } from "@/hooks/useListings";
@@ -108,8 +109,8 @@ export default function ListingDetailPage({ params }: ListingPageProps) {
               <span className="text-gray-900 font-bold text-xl">YAM</span>
             </Link>
             <div className="flex space-x-6 items-center">
-              <Link href="/raffles" className="text-gray-600 hover:text-purple-600 transition-colors">
-                Raffles
+              <Link href="/buy" className="text-gray-600 hover:text-purple-600 transition-colors">
+                Buy
               </Link>
               <Link href="/sell" className="text-gray-600 hover:text-purple-600 transition-colors">
                 Sell

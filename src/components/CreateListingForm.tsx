@@ -8,7 +8,7 @@ import Button from "./Button";
 import Badge from "./Badge";
 
 interface CreateListingFormProps {
-  onSuccess?: (listingId: string) => void;
+  onSuccess?: (listingId: string, transactionId: string) => void;
   onError?: (error: string) => void;
 }
 
@@ -212,10 +212,10 @@ export default function CreateListingForm({ onSuccess, onError }: CreateListingF
       console.log("🚀 [FORM_SUBMIT] Calling createListing function...");
 
       // Call Flow transaction
-      const listingId = await createListing(transactionData);
+      const result = await createListing(transactionData);
       
-      console.log("🎉 [FORM_SUBMIT] Listing created successfully with ID:", listingId);
-      onSuccess?.(listingId);
+      console.log("🎉 [FORM_SUBMIT] Listing created successfully:", result);
+      onSuccess?.(result.listingId, result.transactionId);
       
       // Reset form
       console.log("🔄 [FORM_SUBMIT] Resetting form to default values");

@@ -35,7 +35,7 @@ export function useListings() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const createListing = useCallback(async (listingData: ListingData): Promise<string> => {
+  const createListing = useCallback(async (listingData: ListingData): Promise<{ listingId: string; transactionId: string }> => {
     console.log("🚀 [CREATE_LISTING] Starting listing creation process");
     console.log("📋 [CREATE_LISTING] Input data:", JSON.stringify(listingData, null, 2));
     
@@ -71,10 +71,18 @@ export function useListings() {
         }, 60000);
       });
 
-      // Check if user is authenticated
+      // Check if user is authenticated and refresh if needed
       console.log("🔐 [CREATE_LISTING] Checking user authentication...");
-      const currentUser = await fcl.currentUser.snapshot();
+      let currentUser = await fcl.currentUser.snapshot();
       console.log("👤 [CREATE_LISTING] Current user:", currentUser);
+      
+      // Force refresh authentication state to ensure wallet approval shows
+      if (currentUser.loggedIn) {
+        console.log("🔄 [CREATE_LISTING] Refreshing authentication state...");
+        await fcl.currentUser.refresh();
+        currentUser = await fcl.currentUser.snapshot();
+        console.log("👤 [CREATE_LISTING] Refreshed user:", currentUser);
+      }
       
       if (!currentUser.loggedIn) {
         console.error("❌ [CREATE_LISTING] User not authenticated");
@@ -125,10 +133,10 @@ export function useListings() {
       console.log("🔧 [CREATE_LISTING] Building combined transaction...");
       console.log("🔧 [CREATE_LISTING] About to call fcl.mutate...");
       
-      // Check wallet connection status
-      console.log("🔐 [CREATE_LISTING] Checking wallet connection status...");
-      const user = await fcl.currentUser.snapshot();
-      console.log("👤 [CREATE_LISTING] Current user status:", user);
+      // Ensure fresh authorization for each transaction
+      console.log("🔐 [CREATE_LISTING] Ensuring fresh wallet authorization...");
+      const authz = fcl.currentUser.authorization;
+      console.log("🔑 [CREATE_LISTING] Authorization function:", authz);
       
       let transactionId;
       try {
@@ -163,7 +171,10 @@ export function useListings() {
                 }
             }
           `,
-          computeLimit: 1000  // Increased compute limit
+          computeLimit: 1000,  // Increased compute limit
+          proposer: fcl.currentUser.authorization,  // Explicit proposer
+          authorizations: [fcl.currentUser.authorization],  // Explicit authorizations
+          payer: fcl.currentUser.authorization  // Explicit payer
         });
         
         console.log("✅ [CREATE_LISTING] fcl.mutate returned transaction ID:", transactionId);
@@ -187,7 +198,10 @@ export function useListings() {
       const listingId = `listing_${Date.now()}`;
       
       console.log("🎉 [CREATE_LISTING] Listing created successfully with ID:", listingId);
-      return listingId;
+      console.log("🔗 [CREATE_LISTING] Transaction ID:", transactionId);
+      
+      // Return both listing ID and transaction ID
+      return { listingId, transactionId };
     } catch (err) {
       console.error("❌ [CREATE_LISTING] Error occurred:", err);
       console.error("❌ [CREATE_LISTING] Error stack:", err instanceof Error ? err.stack : "No stack trace");

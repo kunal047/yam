@@ -139,10 +139,7 @@ access(all) contract YAMListings {
         }
     }
 
-    // Storage for listings and escrows
-    access(all) let listings: {UInt64: Listing}
-    access(all) let escrows: {UInt64: [Escrow]}
-    access(all) let nextListingId: UInt64
+    // Storage for verified sellers and nullifiers
     access(all) let verifiedSellers: {Address: String} // Address -> Nationality
     access(all) let userNullifiers: {String: Address} // Nullifier -> Address (for uniqueness)
     access(all) var admin: @Admin
@@ -156,9 +153,6 @@ access(all) contract YAMListings {
     access(all) event SellerVerified(seller: Address, nationality: String)
 
     init() {
-        self.listings = {}
-        self.escrows = {}
-        self.nextListingId = 1
         self.verifiedSellers = {}
         self.userNullifiers = {}
         self.admin <- create Admin()
@@ -203,7 +197,7 @@ access(all) contract YAMListings {
 
     // Buy a direct purchase listing (requires payment from buyer)
     access(all) fun buyListing(listingId: UInt64, buyerNationality: String, payment: @{FungibleToken.Vault}) {
-        let listing = self.listings[listingId]
+        let listing = self.admin.listings[listingId]
         assert(listing != nil, message: "Listing does not exist")
         assert(listing!.getActive(), message: "Listing is not active")
         assert(listing!.type == "direct", message: "Listing is not a direct purchase")
@@ -227,19 +221,19 @@ access(all) contract YAMListings {
             amount: listing!.price
         )
         
-        self.escrows[listingId]!.append(escrow)
+        self.admin.escrows[listingId]!.append(escrow)
         
         // Mark listing as inactive since it's sold
-        var updatedListing = self.listings[listingId]!
+        var updatedListing = self.admin.listings[listingId]!
         updatedListing.setActive(active: false)
-        self.listings[listingId] = updatedListing
+        self.admin.listings[listingId] = updatedListing
         
         emit ListingPurchased(id: listingId, buyer: buyer, amount: listing!.price)
     }
 
     // Enter a raffle (requires payment from buyer)
     access(all) fun enterRaffle(listingId: UInt64, buyerNationality: String, nullifier: String, payment: @{FungibleToken.Vault}) {
-        let listing = self.listings[listingId]
+        let listing = self.admin.listings[listingId]
         assert(listing != nil, message: "Listing does not exist")
         assert(listing!.getActive(), message: "Listing is not active")
         assert(listing!.type == "raffle", message: "Listing is not a raffle")
@@ -276,19 +270,19 @@ access(all) contract YAMListings {
             amount: listing!.price
         )
         
-        self.escrows[listingId]!.append(escrow)
+        self.admin.escrows[listingId]!.append(escrow)
         
         // Add buyer to participants
-        var updatedListing = self.listings[listingId]!
+        var updatedListing = self.admin.listings[listingId]!
         updatedListing.participants.append(buyer)
-        self.listings[listingId] = updatedListing
+        self.admin.listings[listingId] = updatedListing
         
         emit RaffleEntered(id: listingId, participant: buyer)
     }
 
     // Pick winners for a raffle (only after deadline)
     access(all) fun pickWinners(listingId: UInt64): [Address] {
-        let listing = self.listings[listingId]
+        let listing = self.admin.listings[listingId]
         assert(listing != nil, message: "Listing does not exist")
         assert(listing!.type == "raffle", message: "Listing is not a raffle")
         assert(listing!.deadline! <= getCurrentBlock().timestamp, message: "Raffle deadline has not passed")
@@ -304,9 +298,9 @@ access(all) contract YAMListings {
         let winner = participants[Int(randomSeed)]
         
         // Mark listing as inactive
-        var updatedListing = self.listings[listingId]!
+        var updatedListing = self.admin.listings[listingId]!
         updatedListing.setActive(active: false)
-        self.listings[listingId] = updatedListing
+        self.admin.listings[listingId] = updatedListing
         
         emit WinnersPicked(id: listingId, winners: [winner])
         
@@ -315,7 +309,7 @@ access(all) contract YAMListings {
     
     // Transfer escrow to winner (called after pickWinners)
     access(all) fun transferToWinner(listingId: UInt64, winner: Address, amount: UFix64): @{FungibleToken.Vault} {
-        let listing = self.listings[listingId]
+        let listing = self.admin.listings[listingId]
         assert(listing != nil, message: "Listing does not exist")
         assert(listing!.type == "raffle", message: "Listing is not a raffle")
         assert(!listing!.getActive(), message: "Raffle must be completed first")
@@ -331,7 +325,7 @@ access(all) contract YAMListings {
     
     // Transfer escrow to seller (for direct purchases)
     access(all) fun transferToSeller(listingId: UInt64, seller: Address, amount: UFix64): @{FungibleToken.Vault} {
-        let listing = self.listings[listingId]
+        let listing = self.admin.listings[listingId]
         assert(listing != nil, message: "Listing does not exist")
         assert(listing!.seller == seller, message: "Only seller can withdraw")
         assert(!listing!.getActive(), message: "Listing must be completed first")
@@ -349,13 +343,13 @@ access(all) contract YAMListings {
 
     // Get listing by ID
     access(all) fun getListing(id: UInt64): Listing? {
-        return self.listings[id]
+        return self.admin.listings[id]
     }
 
     // Get all active listings
     access(all) fun getActiveListings(): [Listing] {
         let activeListings: [Listing] = []
-        for listing in self.listings.values {
+        for listing in self.admin.listings.values {
             if listing.getActive() {
                 activeListings.append(listing)
             }
@@ -365,6 +359,6 @@ access(all) contract YAMListings {
 
     // Get escrows for a listing
     access(all) fun getEscrows(listingId: UInt64): [Escrow] {
-        return self.escrows[listingId] ?? []
+        return self.admin.escrows[listingId] ?? []
     }
 }
