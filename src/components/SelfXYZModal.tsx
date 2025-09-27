@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { getUniversalLink } from "@selfxyz/core";
 import {
-  SelfQRcodeWrapper,
   SelfAppBuilder,
   type SelfApp,
 } from "@selfxyz/qrcode";
@@ -21,9 +20,22 @@ export default function SelfXYZModal({ isOpen, onSuccess, onError, onClose, flow
   const [selfApp, setSelfApp] = useState<SelfApp | null>(null);
   const [universalLink, setUniversalLink] = useState("");
   const [sessionId, setSessionId] = useState<string>("");
+  const [QRCodeComponent, setQRCodeComponent] = useState<React.ComponentType<{
+    selfApp: SelfApp;
+    onSuccess: () => void;
+    onError: () => void;
+  }> | null>(null);
 
   useEffect(() => {
     if (isOpen) {
+      // Dynamically import the QR code component
+      import("@selfxyz/qrcode").then((module) => {
+        setQRCodeComponent(() => module.SelfQRcode);
+      }).catch((error) => {
+        console.error("Failed to load QR code component:", error);
+        onError();
+      });
+
       try {
         // Require Flow wallet address - no fallback to UUID
         if (!flowWalletAddress) {
@@ -39,7 +51,7 @@ export default function SelfXYZModal({ isOpen, onSuccess, onError, onClose, flow
           version: 2,
           appName: "Yam Marketplace",
           scope: "yam-marketplace", // Must match backend scope
-          endpoint: "https://ab8866ece5d9.ngrok-free.app/api/verify", // Your ngrok public URL
+          endpoint: "https://1092c45d94e2.ngrok-free.app/api/verify", // Your ngrok public URL
           logoBase64: "https://i.postimg.cc/mrmVf9hm/self.png", // Using placeholder logo
           userId: userId,
           endpointType: "https",
@@ -122,9 +134,9 @@ export default function SelfXYZModal({ isOpen, onSuccess, onError, onClose, flow
             Scan this QR code with the Self app
           </p>
 
-          {selfApp ? (
+          {selfApp && QRCodeComponent ? (
             <div className="flex flex-col items-center space-y-4">
-              <SelfQRcodeWrapper
+              <QRCodeComponent
                 selfApp={selfApp}
                 onSuccess={() => handleSuccessfulVerification({})}
                 onError={handleVerificationError}

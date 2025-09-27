@@ -220,14 +220,11 @@ export default function BuyPage() {
                     {listing.type === 'raffle' && (
                       <div className="space-y-2">
                         <div className="flex justify-between text-sm text-gray-600">
-                          <span>Entries: {listing.participants?.length || 0}/{listing.quantity || 1}</span>
-                          <span>{Math.round(((listing.participants?.length || 0) / (listing.quantity || 1)) * 100)}%</span>
+                          <span>Participants: {listing.participants?.length || 0}</span>
+                          <span>1 winner</span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div
-                            className="bg-orange-500 h-2 rounded-full"
-                            style={{ width: `${((listing.participants?.length || 0) / (listing.quantity || 1)) * 100}%` }}
-                          ></div>
+                          <div className="bg-orange-500 h-2 rounded-full w-full"></div>
                         </div>
                         <div className="text-xs text-gray-500">
                           {listing.deadline ? `Ends: ${new Date(listing.deadline * 1000).toLocaleDateString()}` : 'No deadline set'}

@@ -1,26 +1,9 @@
 import { config } from "@onflow/fcl";
 
-// Configure specific Flow wallets only (no WalletConnect)
+// Configure Flow wallets for testnet
 config({
   "accessNode.api": "https://rest-testnet.onflow.org",
-  "discovery.wallet.method": "POP/RPC",
-  "discovery.wallet": [
-    {
-      "appId": "Blocto",
-      "method": "POP/RPC",
-      "endpoint": "https://flow-wallet.blocto.app/api/flow/authn"
-    },
-    {
-      "appId": "Flow Wallet",
-      "method": "POP/RPC", 
-      "endpoint": "https://flow-wallet.blocto.app/api/flow/authn"
-    },
-    {
-      "appId": "Lilico",
-      "method": "POP/RPC",
-      "endpoint": "https://flow-wallet.blocto.app/api/flow/authn"
-    }
-  ],
+  "discovery.wallet": "https://fcl-discovery.onflow.org/testnet/authn",
   "flow.network": "testnet",
   "fcl.limit": 1000,
   "app.detail.title": "YAM - Yet Another Marketplace",

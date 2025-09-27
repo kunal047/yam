@@ -145,6 +145,10 @@ export function useListings() {
         console.log("📊 [CREATE_LISTING] Transaction data:", JSON.stringify(listingData, null, 2));
         console.log("💰 [CREATE_LISTING] Price value:", listingData.price, "Type:", typeof listingData.price);
         console.log("⏰ [CREATE_LISTING] Deadline value:", listingData.deadline, "Type:", typeof listingData.deadline);
+        if (listingData.deadline) {
+          console.log("⏰ [CREATE_LISTING] Deadline timestamp:", new Date(listingData.deadline * 1000).toISOString());
+          console.log("⏰ [CREATE_LISTING] Current timestamp:", new Date().toISOString());
+        }
         // Use explicit compute limit to override FCL's default limit of 10
         console.log("🔧 [CREATE_LISTING] About to call fcl.mutate with computeLimit...");
         
@@ -183,7 +187,7 @@ export function useListings() {
             arg(listingData.itemDesc, t.String),
             arg(listingData.price.toFixed(8), t.UFix64),
             arg(listingData.type, t.String),
-            arg(listingData.deadline ? (listingData.deadline / 1000).toFixed(8) : null, t.Optional(t.UFix64)),
+            arg(listingData.deadline ? listingData.deadline.toFixed(8) : null, t.Optional(t.UFix64)),
             arg(listingData.allowedCountries, t.Array(t.String)),
             arg(listingData.quantity, t.UInt64),
             arg(listingData.sellerNationality, t.String)

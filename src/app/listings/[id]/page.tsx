@@ -222,14 +222,11 @@ export default function ListingDetailPage({ params }: ListingPageProps) {
                 <h3 className="font-semibold text-gray-900 mb-4">Raffle Progress</h3>
                 <div className="space-y-4">
                   <div className="flex justify-between text-sm">
-                    <span>Entries: {listing.participants?.length || 0}/{listing.quantity || 1}</span>
-                    <span>{Math.round(((listing.participants?.length || 0) / (listing.quantity || 1)) * 100)}%</span>
+                    <span>Participants: {listing.participants?.length || 0}</span>
+                    <span>1 winner</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-3">
-                    <div
-                      className="bg-orange-500 h-3 rounded-full"
-                      style={{ width: `${((listing.participants?.length || 0) / (listing.quantity || 1)) * 100}%` }}
-                    ></div>
+                    <div className="bg-orange-500 h-3 rounded-full w-full"></div>
                   </div>
                   <div className="text-sm text-gray-600">
                     {listing.deadline ? `Ends: ${new Date(listing.deadline * 1000).toLocaleDateString()} at ${new Date(listing.deadline * 1000).toLocaleTimeString()}` : 'No deadline set'}

@@ -64,9 +64,9 @@ export default function CreateListingForm({ onSuccess, onError }: CreateListingF
   const { createListing, loading: transactionLoading } = useListings();
   
   const [formData, setFormData] = useState<FormData>({
-    itemName: "",
-    itemDesc: "",
-    price: "",
+    itemName: "Vintage Gaming Console",
+    itemDesc: "A classic retro gaming console in excellent condition. Comes with 2 controllers and 5 games. Perfect for collectors or retro gaming enthusiasts.",
+    price: "25.50",
     quantity: "1",
     type: "direct",
     deadline: "",
@@ -239,9 +239,9 @@ export default function CreateListingForm({ onSuccess, onError }: CreateListingF
       // Reset form
       console.log("🔄 [FORM_SUBMIT] Resetting form to default values");
       setFormData({
-        itemName: "",
-        itemDesc: "",
-        price: "",
+        itemName: "Vintage Gaming Console",
+        itemDesc: "A classic retro gaming console in excellent condition. Comes with 2 controllers and 5 games. Perfect for collectors or retro gaming enthusiasts.",
+        price: "25.50",
         quantity: "1",
         type: "direct",
         deadline: "",
@@ -276,6 +276,9 @@ export default function CreateListingForm({ onSuccess, onError }: CreateListingF
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Create New Listing</h2>
         <p className="text-gray-600">List your item for sale or create a raffle</p>
+        <div className="mt-2 text-sm text-blue-600 bg-blue-50 p-2 rounded">
+          💡 Form is pre-filled with example data for testing. You can modify any fields as needed.
+        </div>
       </div>
 
       {/* Self.xyz Verification Status */}

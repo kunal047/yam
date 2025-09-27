@@ -7,7 +7,7 @@ import path from "path";
 // Reuse a single verifier instance
 const selfBackendVerifier = new SelfBackendVerifier(
   "yam-marketplace", // Use the playground's default scope
-  "https://ab8866ece5d9.ngrok-free.app/api/verify", // Must match frontend endpoint
+  "https://1092c45d94e2.ngrok-free.app/api/verify", // Must match frontend endpoint
   false, // mockPassport: false = mainnet, true = staging/testnet
   AllIds, // Now supports Aadhaar (3) in the new version
   new DefaultConfigStore({
