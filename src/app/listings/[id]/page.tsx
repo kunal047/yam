@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useSelfXYZContext } from "@/contexts/SelfXYZContext";
 import { useFlow } from "@/hooks/useFlow";
+import { useListings } from "@/hooks/useListings";
 import SelfXYZButton from "@/components/SelfXYZButton";
 import WalletConnect from "@/components/WalletConnect";
 import Button from "@/components/Button";
@@ -48,8 +49,9 @@ interface ListingPageProps {
 }
 
 export default function ListingDetailPage({ params }: ListingPageProps) {
-  const { isLoggedIn } = useSelfXYZContext();
+  const { isLoggedIn, verification } = useSelfXYZContext();
   const { isConnected, connectWallet, loading: walletLoading } = useFlow();
+  const { buyListing, enterRaffle, loading: listingsLoading } = useListings();
   const [transactionLoading, setTransactionLoading] = useState(false);
 
   const listing = getListingData(params.id);
@@ -71,11 +73,23 @@ export default function ListingDetailPage({ params }: ListingPageProps) {
 
     setTransactionLoading(true);
     try {
-      // TODO: Implement actual Flow contract transaction
-      await new Promise(resolve => setTimeout(resolve, 3000)); // Mock delay
-      alert(`${listing.type === 'raffle' ? 'Raffle entry' : 'Purchase'} successful!`);
-    } catch {
-      alert("Transaction failed. Please try again.");
+      const buyerNationality = verification.country;
+      const buyerNullifier = verification.nullifier || "";
+      
+      if (!buyerNationality) {
+        alert("Please verify your nationality with Self.xyz first");
+        return;
+      }
+      
+      if (listing.type === "raffle") {
+        await enterRaffle(listing.id, buyerNationality, buyerNullifier);
+        alert("Successfully entered raffle!");
+      } else {
+        await buyListing(listing.id, buyerNationality);
+        alert("Purchase successful!");
+      }
+    } catch (error) {
+      alert(`Transaction failed: ${error instanceof Error ? error.message : "Unknown error"}`);
     } finally {
       setTransactionLoading(false);
     }

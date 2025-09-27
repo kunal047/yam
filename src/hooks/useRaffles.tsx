@@ -91,7 +91,7 @@ export function useRaffles() {
       return { success: true, txId: `mock_tx_${Date.now()}` };
     } catch (error) {
       console.error("Failed to enter raffle:", error);
-      return { success: false, error: error.message };
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   };
 

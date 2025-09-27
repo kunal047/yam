@@ -6,17 +6,23 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "deploy:testnet": "./deploy/deploy.sh testnet",
+    "deploy:mainnet": "./deploy/deploy.sh mainnet",
+    "deploy:emulator": "./deploy/deploy.sh emulator",
+    "test:contract": "./deploy/test_deployment.sh"
   },
   "dependencies": {
     "@onflow/fcl": "^1.20.1",
     "@onflow/types": "^1.4.2",
     "@selfxyz/core": "^1.1.0-beta.6",
     "@selfxyz/qrcode": "^1.0.15",
+    "@types/uuid": "^10.0.0",
     "ethers": "^6.15.0",
     "next": "15.5.4",
-    "react": "19.1.0",
-    "react-dom": "19.1.0"
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

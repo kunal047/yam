@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { useRaffles } from "@/hooks/useRaffles";
 import WalletConnect from "@/components/WalletConnect";

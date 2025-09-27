@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import SelfXYZModal from "@/components/SelfXYZModal";
 
 export interface CredentialSubject {
@@ -8,11 +8,15 @@ export interface CredentialSubject {
   nationality?: string;
   gender?: string;
   ofac?: boolean;
+  nullifier?: string;
 }
 
 export interface SelfVerificationResult {
   credentialSubject?: CredentialSubject;
   status?: string;
+  nullifier?: string;
+  nationality?: string;
+  userIdentifier?: string;
 }
 
 export interface SelfVerification {
@@ -20,7 +24,10 @@ export interface SelfVerification {
   did?: string;
   age?: number;
   country?: string;
+  gender?: string;
   uniqueId?: string;
+  nullifier?: string;
+  userIdentifier?: string;
   proofs?: Record<string, unknown>[];
   timestamp?: Date;
   credentialSubject?: CredentialSubject;
@@ -29,13 +36,14 @@ export interface SelfVerification {
 interface SelfXYZContextType {
   verification: SelfVerification;
   loading: boolean;
-  connectSelf: () => Promise<void>;
+  connectSelf: (walletAddress?: string) => Promise<void>;
   disconnectSelf: () => void;
   isLoggedIn: boolean;
   showVerificationModal: boolean;
   setShowVerificationModal: (show: boolean) => void;
-  handleVerificationSuccess: (result: SelfVerificationResult) => void;
+  handleVerificationSuccess: (apiResponse: Record<string, unknown>) => void;
   handleVerificationError: () => void;
+  updateVerificationFromAPI: (apiResponse: Record<string, unknown>) => void;
 }
 
 const SelfXYZContext = createContext<SelfXYZContextType | undefined>(undefined);
@@ -44,50 +52,139 @@ interface SelfXYZProviderProps {
   children: ReactNode;
 }
 
+const STORAGE_KEY = "yam_selfxyz_verification";
+
 export function SelfXYZProvider({ children }: SelfXYZProviderProps) {
   const [verification, setVerification] = useState<SelfVerification>({
     isVerified: false,
   });
   const [loading, setLoading] = useState(false);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [flowWalletAddress, setFlowWalletAddress] = useState<string | undefined>(undefined);
 
-  const connectSelf = async () => {
+  // Load verification from localStorage on mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        // Convert timestamp back to Date object
+        if (parsed.timestamp) {
+          parsed.timestamp = new Date(parsed.timestamp);
+        }
+        setVerification(parsed);
+      }
+    } catch (error) {
+      console.error("Failed to load verification from localStorage:", error);
+      // Clear corrupted data
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  }, []);
+
+  // Save verification to localStorage whenever it changes
+  useEffect(() => {
+    if (verification.isVerified) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(verification));
+      } catch (error) {
+        console.error("Failed to save verification to localStorage:", error);
+      }
+    } else {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  }, [verification]);
+
+  const connectSelf = async (walletAddress?: string) => {
+    // Check if Flow wallet is connected first
+    if (!walletAddress) {
+      console.error("Flow wallet must be connected before verification");
+      setLoading(false);
+      return;
+    }
+    
+    setFlowWalletAddress(walletAddress);
     setLoading(true);
     setShowVerificationModal(true);
     // The actual verification will be handled by the SelfXYZModal component
   };
 
-  const handleVerificationSuccess = (result: SelfVerificationResult) => {
-    // Use a stable timestamp to avoid hydration mismatch
+  const handleVerificationSuccess = async (apiResponse: Record<string, unknown>) => {
+    console.log("QR code verification completed, processing API response:", apiResponse);
+    
+    setLoading(true);
+    setShowVerificationModal(false);
+    
+    // Process the API response directly
+    if (apiResponse && apiResponse.status === "success") {
+      updateVerificationFromAPI(apiResponse);
+    } else {
+      console.error("Invalid API response:", apiResponse);
+      setLoading(false);
+    }
+  };
+
+  // Function to update verification data from backend API response
+  const updateVerificationFromAPI = (apiResponse: Record<string, unknown>) => {
+    console.log("Updating verification from API response:", apiResponse);
+    
     const now = new Date().toISOString();
-    setVerification({
+    
+    // Extract data from the API response
+    const nullifier = apiResponse.nullifier as string;
+    const nationality = apiResponse.nationality as string;
+    const userIdentifier = apiResponse.userIdentifier as string;
+    const credentialSubject = apiResponse.credentialSubject as Record<string, unknown>;
+    const age = credentialSubject?.age ? parseInt(credentialSubject.age as string) : undefined;
+    const gender = credentialSubject?.gender as string;
+    const ofac = credentialSubject?.ofac as boolean;
+    
+    const verificationData = {
       isVerified: true,
-      did: result.credentialSubject ? `did:self:${now}` : undefined,
-      age: result.credentialSubject?.age,
-      country: result.credentialSubject?.nationality,
-      uniqueId: result.credentialSubject ? `self_xyz_${now}` : undefined,
-      proofs: result.credentialSubject ? [
+      did: `did:self:${now}`,
+      age: age,
+      country: nationality,
+      gender: gender,
+      uniqueId: nullifier || `self_xyz_${now}`, // Use nullifier as unique ID
+      nullifier: nullifier,
+      userIdentifier: userIdentifier,
+      proofs: [
         {
           type: "AgeVerification",
-          value: result.credentialSubject.age,
+          value: age,
           issuer: "self.xyz"
         },
         {
           type: "CountryVerification", 
-          value: result.credentialSubject.nationality,
+          value: nationality,
+          issuer: "self.xyz"
+        },
+        {
+          type: "GenderVerification",
+          value: gender,
           issuer: "self.xyz"
         },
         {
           type: "UniquenessVerification",
           value: true,
-          issuer: "self.xyz"
+          issuer: "self.xyz",
+          nullifier: nullifier
         }
-      ] : undefined,
+      ],
       timestamp: new Date(now),
-      credentialSubject: result.credentialSubject,
-    });
+      credentialSubject: {
+        age: age,
+        nationality: nationality,
+        gender: gender,
+        ofac: ofac,
+        nullifier: nullifier
+      },
+    };
+    
+    console.log("Setting verification data:", verificationData);
+    setVerification(verificationData);
     setLoading(false);
-    setShowVerificationModal(false);
+    
+    console.log("Verification completed successfully!");
   };
 
   const handleVerificationError = () => {
@@ -98,6 +195,8 @@ export function SelfXYZProvider({ children }: SelfXYZProviderProps) {
   const disconnectSelf = () => {
     setVerification({ isVerified: false });
     setShowVerificationModal(false);
+    // Clear localStorage
+    localStorage.removeItem(STORAGE_KEY);
   };
 
   const value: SelfXYZContextType = {
@@ -108,16 +207,20 @@ export function SelfXYZProvider({ children }: SelfXYZProviderProps) {
     isLoggedIn: verification.isVerified,
     showVerificationModal,
     setShowVerificationModal,
+    handleVerificationSuccess,
+    handleVerificationError,
+    updateVerificationFromAPI,
   };
 
   return (
-    <SelfXYZContext.Provider value={{ ...value, handleVerificationSuccess, handleVerificationError }}>
+    <SelfXYZContext.Provider value={value}>
       {children}
       <SelfXYZModal
         isOpen={showVerificationModal}
         onSuccess={handleVerificationSuccess}
         onError={handleVerificationError}
         onClose={() => setShowVerificationModal(false)}
+        flowWalletAddress={flowWalletAddress}
       />
     </SelfXYZContext.Provider>
   );

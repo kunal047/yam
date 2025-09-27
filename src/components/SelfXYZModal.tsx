@@ -8,33 +8,43 @@ import {
   type SelfApp,
 } from "@selfxyz/qrcode";
 
-import { SelfVerificationResult } from "@/contexts/SelfXYZContext";
 
 interface SelfXYZModalProps {
   isOpen: boolean;
-  onSuccess: (result: SelfVerificationResult) => void;
+  onSuccess: (apiResponse: Record<string, unknown>) => void;
   onError: () => void;
   onClose: () => void;
+  flowWalletAddress?: string; // Flow wallet address to use as userId
 }
 
-export default function SelfXYZModal({ isOpen, onSuccess, onError, onClose }: SelfXYZModalProps) {
+export default function SelfXYZModal({ isOpen, onSuccess, onError, onClose, flowWalletAddress }: SelfXYZModalProps) {
   const [selfApp, setSelfApp] = useState<SelfApp | null>(null);
   const [universalLink, setUniversalLink] = useState("");
-  const [userId] = useState("550e8400-e29b-41d4-a716-446655440000"); // Valid UUID to avoid hydration mismatch
+  const [sessionId, setSessionId] = useState<string>("");
 
   useEffect(() => {
     if (isOpen) {
       try {
+        // Require Flow wallet address - no fallback to UUID
+        if (!flowWalletAddress) {
+          console.error("Flow wallet address is required for verification");
+          onError();
+          return;
+        }
+
+        const userId = flowWalletAddress;
+        setSessionId(userId);
+        
         const app = new SelfAppBuilder({
           version: 2,
           appName: "Yam Marketplace",
           scope: "yam-marketplace", // Must match backend scope
-          endpoint: "https://82ac421dc420.ngrok-free.app/api/verify", // Your ngrok public URL
+          endpoint: "https://ab8866ece5d9.ngrok-free.app/api/verify", // Your ngrok public URL
           logoBase64: "https://i.postimg.cc/mrmVf9hm/self.png", // Using placeholder logo
           userId: userId,
           endpointType: "https",
-          userIdType: "uuid", // Must match backend userIdentifierType
-          userDefinedData: "Hello World",
+          userIdType: "hex", // Keep as uuid for now until we find the correct type
+          userDefinedData: "YAM Marketplace Verification",
           disclosures: {
             minimumAge: 18,
             nationality: true,
@@ -50,13 +60,49 @@ export default function SelfXYZModal({ isOpen, onSuccess, onError, onClose }: Se
         onError();
       }
     }
-  }, [isOpen, userId, onError]);
+  }, [isOpen, onError, flowWalletAddress]);
 
-  const handleSuccessfulVerification = (result: unknown) => {
-    console.log("Verification successful!");
-    // Pass the actual result from Self.xyz verification
-    onSuccess(result as SelfVerificationResult);
-  };
+    const handleSuccessfulVerification = async (result: unknown) => {
+      console.log("Verification successful!");
+      console.log("Verification result:", JSON.stringify(result, null, 2));
+      
+      // The Self.xyz SDK onSuccess callback doesn't contain the API response
+      // We need to fetch the verification result from our backend using the userId as sessionId
+      try {
+        // Wait a moment for the backend to complete processing
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Fetch the verification result from our backend
+        const response = await fetch('/api/verify', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            checkStatus: true,
+            sessionId: sessionId // Use the generated sessionId
+          })
+        });
+        
+        if (response.ok) {
+          const apiResponse = await response.json();
+          console.log("Retrieved verification result:", JSON.stringify(apiResponse, null, 2));
+          
+          if (apiResponse && apiResponse.status === "success") {
+            onSuccess(apiResponse);
+          } else {
+            console.error("Invalid verification result:", apiResponse);
+            onError();
+          }
+        } else {
+          console.error("Failed to retrieve verification result:", response.status);
+          onError();
+        }
+      } catch (error) {
+        console.error("Error retrieving verification result:", error);
+        onError();
+      }
+    };
 
   const handleVerificationError = () => {
     console.error("Self.xyz verification failed");

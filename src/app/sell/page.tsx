@@ -1,11 +1,98 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
 import { useSelfXYZContext } from "@/contexts/SelfXYZContext";
 import SelfXYZButton from "@/components/SelfXYZButton";
 import WalletConnect from "@/components/WalletConnect";
 import Button from "@/components/Button";
+import CreateListingForm from "@/components/CreateListingForm";
 
 export default function SellPage() {
   const { isLoggedIn, verification } = useSelfXYZContext();
+  const [showForm, setShowForm] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const handleFormSuccess = (listingId: string) => {
+    setSuccessMessage(`Listing created successfully! ID: ${listingId}`);
+    setShowForm(false);
+    setErrorMessage("");
+  };
+
+  const handleFormError = (error: string) => {
+    setErrorMessage(error);
+    setSuccessMessage("");
+  };
+
+  if (showForm) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        {/* Navigation */}
+        <nav className="bg-white shadow-sm border-b border-gray-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center py-4">
+              <Link href="/" className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">🍠</span>
+                </div>
+                <span className="text-gray-900 font-bold text-xl">YAM</span>
+              </Link>
+              <div className="flex space-x-6 items-center">
+                <Link href="/raffles" className="text-gray-600 hover:text-purple-600 transition-colors">
+                  Raffles
+                </Link>
+                <Link href="/sell" className="text-purple-600 font-medium">
+                  Sell
+                </Link>
+                <Link href="/profile" className="text-gray-600 hover:text-purple-600 transition-colors">
+                  Profile
+                </Link>
+                <SelfXYZButton />
+                <WalletConnect />
+              </div>
+            </div>
+          </div>
+        </nav>
+
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="mb-6">
+            <Button
+              variant="outline"
+              onClick={() => setShowForm(false)}
+              className="mb-4"
+            >
+              ← Back to Options
+            </Button>
+          </div>
+
+          {successMessage && (
+            <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">
+              <div className="flex items-center space-x-2">
+                <span className="text-green-600">✅</span>
+                <span className="text-green-800">{successMessage}</span>
+              </div>
+            </div>
+          )}
+
+          {errorMessage && (
+            <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="flex items-center space-x-2">
+                <span className="text-red-600">❌</span>
+                <span className="text-red-800">{errorMessage}</span>
+              </div>
+            </div>
+          )}
+
+          <CreateListingForm
+            onSuccess={handleFormSuccess}
+            onError={handleFormError}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navigation */}
@@ -74,10 +161,7 @@ export default function SellPage() {
             {isLoggedIn ? (
               <Button
                 className="w-full"
-                onClick={() => {
-                  // TODO: Trigger Flow wallet connection and contract call
-                  console.log("Creating raffle listing...");
-                }}
+                onClick={() => setShowForm(true)}
               >
                 Create Raffle Listing
               </Button>
@@ -125,10 +209,7 @@ export default function SellPage() {
               <Button
                 variant="secondary"
                 className="w-full"
-                onClick={() => {
-                  // TODO: Trigger Flow wallet connection and contract call
-                  console.log("Creating direct listing...");
-                }}
+                onClick={() => setShowForm(true)}
               >
                 Create Direct Listing
               </Button>
@@ -158,6 +239,8 @@ export default function SellPage() {
                   <p>• DID: <code className="bg-green-100 px-1 rounded text-xs">{verification.did}</code></p>
                   <p>• Age: {verification.age}+</p>
                   <p>• Country: {verification.country}</p>
+                  <p>• Gender: {verification.gender}</p>
+                  <p>• Nullifier: <code className="bg-green-100 px-1 rounded text-xs">{verification.nullifier?.slice(0, 16)}...</code></p>
                   <p>• Unique ID verified</p>
                 </div>
               </div>

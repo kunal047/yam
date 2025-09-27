@@ -1,0 +1,48 @@
+{
+  "0x0000000000000000000000001f67c2e66c7e3ee3": {
+    "status": "success",
+    "result": true,
+    "attestationId": 3,
+    "isValidDetails": {
+      "isValid": true,
+      "isMinimumAgeValid": true,
+      "isOfacValid": true
+    },
+    "forbiddenCountriesList": [],
+    "discloseOutput": {
+      "nullifier": "3872637927681354647896568183616632797716792144252263178440122633941930637613",
+      "forbiddenCountriesListPacked": [
+        "0",
+        "0",
+        "0",
+        "0"
+      ],
+      "issuingState": "",
+      "name": "",
+      "idNumber": "\u0000\u0000\u0000\u0000",
+      "nationality": "IND",
+      "dateOfBirth": "NaN",
+      "gender": "M",
+      "expiryDate": "UNAVAILABLE",
+      "minimumAge": "18",
+      "ofac": [
+        false,
+        true,
+        true
+      ]
+    },
+    "userData": {
+      "userIdentifier": "0x0000000000000000000000001f67c2e66c7e3ee3",
+      "userDefinedData": "59414d204d61726b6574706c61636520566572696669636174696f6e"
+    },
+    "nullifier": "3872637927681354647896568183616632797716792144252263178440122633941930637613",
+    "nationality": "IND",
+    "userIdentifier": "0x0000000000000000000000001f67c2e66c7e3ee3",
+    "credentialSubject": {
+      "age": "18",
+      "nationality": "IND",
+      "gender": "M",
+      "ofac": false
+    }
+  }
+}

@@ -62,7 +62,7 @@ export function usePurchases() {
       return { success: true, txId: `mock_purchase_${Date.now()}` };
     } catch (error) {
       console.error("Failed to purchase item:", error);
-      return { success: false, error: error.message };
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     } finally {
       setLoading(false);
     }

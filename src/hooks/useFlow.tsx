@@ -17,14 +17,16 @@ export function useFlow() {
 
   useEffect(() => {
     // Subscribe to user state changes
-    fcl.currentUser().subscribe(setUser);
+    fcl.currentUser().subscribe((user: { addr?: string; loggedIn?: boolean; cid?: string }) => {
+      setUser({
+        addr: user.addr || null,
+        loggedIn: user.loggedIn || false,
+        cid: user.cid
+      });
+    });
   }, []);
 
   const connectWallet = async () => {
-    if (!isSelfVerified) {
-      throw new Error("Please verify your identity with Self.xyz before connecting your wallet");
-    }
-
     setLoading(true);
     try {
       await fcl.authenticate();
@@ -47,7 +49,7 @@ export function useFlow() {
     }
   };
 
-  const canConnectWallet = isSelfVerified;
+  const canConnectWallet = true; // Allow wallet connection without Self.xyz verification
 
   return {
     user,
