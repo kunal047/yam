@@ -52,8 +52,9 @@ export function useListings() {
         await new Promise(resolve => setTimeout(resolve, 2000));
         
         const listingId = `mock_listing_${Date.now()}`;
+        const transactionId = `mock_tx_${Date.now()}`;
         console.log("🎉 [CREATE_LISTING] Mock listing created with ID:", listingId);
-        return listingId;
+        return { listingId, transactionId };
       } catch (err) {
         console.error("❌ [CREATE_LISTING] Mock error:", err);
         throw err;
@@ -73,15 +74,12 @@ export function useListings() {
 
       // Check if user is authenticated and refresh if needed
       console.log("🔐 [CREATE_LISTING] Checking user authentication...");
-      let currentUser = await fcl.currentUser.snapshot();
+      const currentUser = await fcl.currentUser.snapshot();
       console.log("👤 [CREATE_LISTING] Current user:", currentUser);
       
-      // Force refresh authentication state to ensure wallet approval shows
+      // Check if user is properly authenticated
       if (currentUser.loggedIn) {
-        console.log("🔄 [CREATE_LISTING] Refreshing authentication state...");
-        await fcl.currentUser.refresh();
-        currentUser = await fcl.currentUser.snapshot();
-        console.log("👤 [CREATE_LISTING] Refreshed user:", currentUser);
+        console.log("✅ [CREATE_LISTING] User is authenticated:", currentUser);
       }
       
       if (!currentUser.loggedIn) {
@@ -154,27 +152,42 @@ export function useListings() {
           cadence: `
             import YAMListings from 0x1f67c2e66c7e3ee3
 
-            transaction() {
+            transaction(
+                itemName: String,
+                itemDesc: String,
+                price: UFix64,
+                type: String,
+                deadline: UFix64?,
+                allowedCountries: [String],
+                quantity: UInt64,
+                sellerNationality: String
+            ) {
                 prepare(acct: auth(Storage, Keys, Contracts, Inbox, Capabilities) &Account) {
                     let admin = YAMListings.getAdmin()
                     admin.createListing(
-                        itemName: "Sample Item",
-                        itemDesc: "Test Description", 
-                        price: 10.0,
-                        type: "direct",
-                        deadline: nil,
-                        allowedCountries: ["US"],
-                        quantity: 1,
-                        sellerNationality: "US",
+                        itemName: itemName,
+                        itemDesc: itemDesc,
+                        price: price,
+                        type: type,
+                        deadline: deadline,
+                        allowedCountries: allowedCountries,
+                        quantity: quantity,
+                        sellerNationality: sellerNationality,
                         seller: acct.address
                     )
                 }
             }
           `,
-          computeLimit: 1000,  // Increased compute limit
-          proposer: fcl.currentUser.authorization,  // Explicit proposer
-          authorizations: [fcl.currentUser.authorization],  // Explicit authorizations
-          payer: fcl.currentUser.authorization  // Explicit payer
+          args: (arg, t) => [
+            arg(listingData.itemName, t.String),
+            arg(listingData.itemDesc, t.String),
+            arg(listingData.price.toFixed(8), t.UFix64),
+            arg(listingData.type, t.String),
+            arg(listingData.deadline ? (listingData.deadline / 1000).toFixed(8) : null, t.Optional(t.UFix64)),
+            arg(listingData.allowedCountries, t.Array(t.String)),
+            arg(listingData.quantity, t.UInt64),
+            arg(listingData.sellerNationality, t.String)
+          ]
         });
         
         console.log("✅ [CREATE_LISTING] fcl.mutate returned transaction ID:", transactionId);
@@ -237,6 +250,12 @@ export function useListings() {
     setLoading(true);
     setError(null);
 
+    // Ensure paymentAmount is a valid number
+    const numPaymentAmount = Number(paymentAmount);
+    if (isNaN(numPaymentAmount) || numPaymentAmount <= 0) {
+      throw new Error("Invalid payment amount");
+    }
+
     try {
       const transaction = `
         import FungibleToken from 0x9a0766d93b6608b7
@@ -244,21 +263,21 @@ export function useListings() {
         import YAMListings from 0x1f67c2e66c7e3ee3
 
         transaction(listingId: UInt64, buyerNationality: String, paymentAmount: UFix64) {
-          let buyerVault: &FlowToken.Vault
-          let payment: @FungibleToken.Vault
+          let payment: @{FungibleToken.Vault}
           
-          prepare(acct: auth(Storage, Keys, Contracts, Inbox, Capabilities) &Account) {
-            // Get buyer's Flow token vault
-            self.buyerVault = acct.borrow<&FlowToken.Vault>(from: FlowToken.VaultStoragePath)
-              ?? panic("Flow token vault not found")
-            
-            // Withdraw payment amount from buyer's vault
-            self.payment <- self.buyerVault.withdraw(amount: paymentAmount)
+          prepare(signer: auth(BorrowValue) &Account) {
+            // Get a reference to the signer's stored vault directly
+            let vaultRef = signer.storage.borrow<auth(FungibleToken.Withdraw) &{FungibleToken.Provider}>(
+              from: /storage/flowTokenVault
+            ) ?? panic("Could not borrow reference to the owner's Vault!")
+
+            // Withdraw tokens from the signer's stored vault
+            self.payment <- vaultRef.withdraw(amount: paymentAmount)
           }
           
           execute {
             // Buy the listing
-            Listings.buyListing(
+            YAMListings.buyListing(
               listingId: listingId,
               buyerNationality: buyerNationality,
               payment: <- self.payment
@@ -269,19 +288,39 @@ export function useListings() {
         }
       `;
 
-      await fcl.mutate({
+      const transactionId = await fcl.mutate({
         cadence: transaction,
         args: (arg, t) => [
-          arg(listingId, t.UInt64),
+          arg(parseInt(listingId), t.UInt64),
           arg(buyerNationality, t.String),
-          arg(paymentAmount.toFixed(2), t.UFix64)
+          arg(numPaymentAmount.toFixed(8), t.UFix64)
         ]
       });
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to buy listing";
-      setError(errorMessage);
-      throw new Error(errorMessage);
-    } finally {
+
+      console.log("🔄 [BUY_LISTING] Transaction submitted:", transactionId);
+      
+      // Wait for transaction to be sealed
+      await fcl.tx(transactionId).onceSealed();
+      console.log("✅ [BUY_LISTING] Transaction sealed successfully");
+           } catch (err) {
+             const errorMessage = err instanceof Error ? err.message : "Failed to buy listing";
+             console.error("❌ [BUY_LISTING] Transaction failed:", errorMessage);
+             
+             // Handle specific contract errors gracefully
+             if (errorMessage.includes("Buyer country not allowed")) {
+               setError("Your country is not eligible for this purchase. Please check the listing requirements.");
+             } else if (errorMessage.includes("Insufficient balance")) {
+               setError("Insufficient FLOW balance. Please add more FLOW to your wallet.");
+             } else if (errorMessage.includes("Listing not found")) {
+               setError("This listing is no longer available.");
+             } else if (errorMessage.includes("Listing already sold")) {
+               setError("This item has already been sold.");
+             } else {
+               setError(`Purchase failed: ${errorMessage}`);
+             }
+             
+             throw new Error(errorMessage);
+           } finally {
       setLoading(false);
     }
   }, []);
@@ -290,6 +329,12 @@ export function useListings() {
     setLoading(true);
     setError(null);
 
+    // Ensure paymentAmount is a valid number
+    const numPaymentAmount = Number(paymentAmount);
+    if (isNaN(numPaymentAmount) || numPaymentAmount <= 0) {
+      throw new Error("Invalid payment amount");
+    }
+
     try {
       const transaction = `
         import FungibleToken from 0x9a0766d93b6608b7
@@ -297,21 +342,21 @@ export function useListings() {
         import YAMListings from 0x1f67c2e66c7e3ee3
 
         transaction(listingId: UInt64, buyerNationality: String, nullifier: String, paymentAmount: UFix64) {
-          let buyerVault: &FlowToken.Vault
-          let payment: @FungibleToken.Vault
+          let payment: @{FungibleToken.Vault}
           
-          prepare(acct: auth(Storage, Keys, Contracts, Inbox, Capabilities) &Account) {
-            // Get buyer's Flow token vault
-            self.buyerVault = acct.borrow<&FlowToken.Vault>(from: FlowToken.VaultStoragePath)
-              ?? panic("Flow token vault not found")
-            
-            // Withdraw payment amount from buyer's vault
-            self.payment <- self.buyerVault.withdraw(amount: paymentAmount)
+          prepare(signer: auth(BorrowValue) &Account) {
+            // Get a reference to the signer's stored vault directly
+            let vaultRef = signer.storage.borrow<auth(FungibleToken.Withdraw) &{FungibleToken.Provider}>(
+              from: /storage/flowTokenVault
+            ) ?? panic("Could not borrow reference to the owner's Vault!")
+
+            // Withdraw tokens from the signer's stored vault
+            self.payment <- vaultRef.withdraw(amount: paymentAmount)
           }
           
           execute {
             // Enter the raffle
-            Listings.enterRaffle(
+            YAMListings.enterRaffle(
               listingId: listingId,
               buyerNationality: buyerNationality,
               nullifier: nullifier,
@@ -323,20 +368,42 @@ export function useListings() {
         }
       `;
 
-      await fcl.mutate({
+      const transactionId = await fcl.mutate({
         cadence: transaction,
         args: (arg, t) => [
-          arg(listingId, t.UInt64),
+          arg(parseInt(listingId), t.UInt64),
           arg(buyerNationality, t.String),
           arg(buyerNullifier, t.String),
-          arg(paymentAmount.toFixed(2), t.UFix64)
+          arg(numPaymentAmount.toFixed(8), t.UFix64)
         ]
       });
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to enter raffle";
-      setError(errorMessage);
-      throw new Error(errorMessage);
-    } finally {
+
+      console.log("🔄 [ENTER_RAFFLE] Transaction submitted:", transactionId);
+      
+      // Wait for transaction to be sealed
+      await fcl.tx(transactionId).onceSealed();
+      console.log("✅ [ENTER_RAFFLE] Transaction sealed successfully");
+           } catch (err) {
+             const errorMessage = err instanceof Error ? err.message : "Failed to enter raffle";
+             console.error("❌ [ENTER_RAFFLE] Transaction failed:", errorMessage);
+             
+             // Handle specific contract errors gracefully
+             if (errorMessage.includes("Buyer country not allowed")) {
+               setError("Your country is not eligible for this raffle. Please check the raffle requirements.");
+             } else if (errorMessage.includes("Insufficient balance")) {
+               setError("Insufficient FLOW balance. Please add more FLOW to your wallet.");
+             } else if (errorMessage.includes("Listing not found")) {
+               setError("This raffle is no longer available.");
+             } else if (errorMessage.includes("Raffle already ended")) {
+               setError("This raffle has already ended.");
+             } else if (errorMessage.includes("Already entered")) {
+               setError("You have already entered this raffle.");
+             } else {
+               setError(`Failed to enter raffle: ${errorMessage}`);
+             }
+             
+             throw new Error(errorMessage);
+           } finally {
       setLoading(false);
     }
   }, []);
@@ -407,6 +474,13 @@ export function useListings() {
 
   const getListing = useCallback(async (listingId: string): Promise<Listing | null> => {
     try {
+      // Check if FCL is properly configured
+      const config = fcl.config();
+      if (!config.get("accessNode.api")) {
+        console.error("❌ [GET_LISTING] FCL not properly configured - accessNode.api missing");
+        throw new Error("Flow configuration not loaded. Please refresh the page.");
+      }
+
       const script = `
         import YAMListings from 0x1f67c2e66c7e3ee3
 
@@ -418,7 +492,7 @@ export function useListings() {
       const result = await fcl.query({
         cadence: script,
         args: (arg, t) => [
-          arg(listingId, t.UInt64)
+          arg(parseInt(listingId), t.UInt64)
         ]
       });
 
@@ -431,6 +505,13 @@ export function useListings() {
 
   const getActiveListings = useCallback(async (): Promise<Listing[]> => {
     try {
+      // Check if FCL is properly configured
+      const config = fcl.config();
+      if (!config.get("accessNode.api")) {
+        console.error("❌ [GET_ACTIVE_LISTINGS] FCL not properly configured - accessNode.api missing");
+        throw new Error("Flow configuration not loaded. Please refresh the page.");
+      }
+
       const script = `
         import YAMListings from 0x1f67c2e66c7e3ee3
 

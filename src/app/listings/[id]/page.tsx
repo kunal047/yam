@@ -2,45 +2,15 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
 import { useSelfXYZContext } from "@/contexts/SelfXYZContext";
 import { useFlow } from "@/hooks/useFlow";
 import { useListings } from "@/hooks/useListings";
 import SelfXYZButton from "@/components/SelfXYZButton";
 import WalletConnect from "@/components/WalletConnect";
-import Button from "@/components/Button";
 
-// Mock listing data - replace with real contract data
-const getListingData = (id: string) => {
-  if (id === "raffle-1") {
-    return {
-      id,
-      type: "raffle" as const,
-      title: "iPhone 15 Pro Max",
-      description: "Latest iPhone with all premium features including Pro camera system, A17 Pro chip, and titanium design.",
-      price: 50,
-      image: "https://placehold.co/800x600/purple/orange/png?text=iPhone+15+Pro+Max",
-      entries: 234,
-      maxEntries: 1000,
-      endTime: new Date(Date.now() + 86400000), // 24 hours from now
-      seller: "0x1234567890abcdef",
-      sellerVerified: true,
-      sellerReputation: 4.8,
-    };
-  } else {
-    return {
-      id,
-      type: "direct" as const,
-      title: "Gaming PC Setup",
-      description: "Complete gaming rig with RTX 4080, Intel i9, 32GB RAM, and 2TB SSD. Perfect for 4K gaming.",
-      price: 2500,
-      image: "https://placehold.co/800x600/purple/orange/png?text=Gaming+PC",
-      seller: "0x567890abcdef1234",
-      sellerVerified: true,
-      sellerReputation: 4.9,
-      inStock: true,
-    };
-  }
+// Helper function to generate placeholder image based on listing data
+const getPlaceholderImage = (title: string) => {
+  return `https://placehold.co/800x600/purple/orange/png?text=${encodeURIComponent(title)}`;
 };
 
 interface ListingPageProps {
@@ -52,12 +22,51 @@ interface ListingPageProps {
 export default function ListingDetailPage({ params }: ListingPageProps) {
   const { isLoggedIn, verification } = useSelfXYZContext();
   const { isConnected, connectWallet, loading: walletLoading } = useFlow();
-  const { buyListing, enterRaffle, loading: listingsLoading } = useListings();
+  const { buyListing, enterRaffle, getListing } = useListings();
   const [transactionLoading, setTransactionLoading] = useState(false);
+  const [listing, setListing] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const listing = getListingData(params.id);
+  // Load listing data from blockchain
+  useEffect(() => {
+    const loadListing = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const resolvedParams = await params;
+        const listingId = resolvedParams.id;
+        console.log("🔄 [LISTING_DETAIL] Loading listing:", listingId);
+        
+        const listingData = await getListing(listingId);
+        if (listingData) {
+          // Check if listing is still active
+          if (!listingData.isActive) {
+            setError("This item has been sold and is no longer available");
+          } else {
+            setListing(listingData);
+            console.log("✅ [LISTING_DETAIL] Loaded listing:", listingData);
+          }
+        } else {
+          setError("Listing not found");
+        }
+      } catch (err) {
+        console.error("❌ [LISTING_DETAIL] Failed to load listing:", err);
+        setError(err instanceof Error ? err.message : "Failed to load listing");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadListing();
+  }, [params, getListing]); // Use params directly as dependency
 
   const handlePurchase = async () => {
+    if (!listing) {
+      alert("Listing not loaded");
+      return;
+    }
+
     if (!isLoggedIn) {
       alert("Please verify your identity with Self.xyz first");
       return;
@@ -79,22 +88,57 @@ export default function ListingDetailPage({ params }: ListingPageProps) {
       
       if (!buyerNationality) {
         alert("Please verify your nationality with Self.xyz first");
+        setTransactionLoading(false);
         return;
       }
       
+      console.log("🛒 [LISTING_DETAIL] Starting purchase:", {
+        listingId: listing.id,
+        type: listing.type,
+        price: listing.price,
+        buyerNationality,
+        buyerNullifier
+      });
+      
       if (listing.type === "raffle") {
-        await enterRaffle(listing.id, buyerNationality, buyerNullifier);
+        await enterRaffle(listing.id, buyerNationality, buyerNullifier, Number(listing.price));
         alert("Successfully entered raffle!");
       } else {
-        await buyListing(listing.id, buyerNationality);
+        await buyListing(listing.id, buyerNationality, Number(listing.price));
         alert("Purchase successful!");
       }
     } catch (error) {
+      console.error("❌ [LISTING_DETAIL] Purchase failed:", error);
       alert(`Transaction failed: ${error instanceof Error ? error.message : "Unknown error"}`);
     } finally {
       setTransactionLoading(false);
     }
   };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-gray-500">Loading listing...</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error || !listing) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-500 mb-4">Error: {error || "Listing not found"}</div>
+          <Link href="/buy" className="text-purple-600 hover:underline">
+            ← Back to Listings
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -130,8 +174,8 @@ export default function ListingDetailPage({ params }: ListingPageProps) {
           {/* Image Section */}
           <div>
             <img
-              src={listing.image}
-              alt={listing.title}
+              src={listing.image || getPlaceholderImage(listing.itemName || listing.title)}
+              alt={listing.itemName || listing.title}
               className="w-full rounded-lg shadow-lg"
             />
           </div>
@@ -140,7 +184,7 @@ export default function ListingDetailPage({ params }: ListingPageProps) {
           <div className="space-y-6">
             <div>
               <div className="flex items-center space-x-2 mb-2">
-                <h1 className="text-3xl font-bold text-gray-900">{listing.title}</h1>
+                <h1 className="text-3xl font-bold text-gray-900">{listing.itemName || listing.title}</h1>
                 {listing.type === 'raffle' && (
                   <div className="bg-orange-100 text-orange-800 text-sm px-2 py-1 rounded-full">
                     🎰 Raffle
@@ -158,26 +202,17 @@ export default function ListingDetailPage({ params }: ListingPageProps) {
                   </div>
                 )}
               </div>
-              <p className="text-gray-600 text-lg">{listing.description}</p>
+              <p className="text-gray-600 text-lg">{listing.itemDesc || listing.description}</p>
             </div>
 
             {/* Seller Info */}
             <div className="bg-white p-4 rounded-lg border border-gray-200">
               <h3 className="font-semibold text-gray-900 mb-2">Seller Information</h3>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm text-gray-600">Address:</span>
-                  <code className="text-sm bg-gray-100 px-2 py-1 rounded">
-                    {listing.seller}
-                  </code>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm text-gray-600">Reputation</div>
-                  <div className="flex items-center space-x-1">
-                    <span className="text-yellow-500">⭐</span>
-                    <span className="font-semibold">{listing.sellerReputation}</span>
-                  </div>
-                </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-600">Address:</span>
+                <code className="text-sm bg-gray-100 px-2 py-1 rounded text-black">
+                  {listing.seller}
+                </code>
               </div>
             </div>
 
@@ -187,17 +222,17 @@ export default function ListingDetailPage({ params }: ListingPageProps) {
                 <h3 className="font-semibold text-gray-900 mb-4">Raffle Progress</h3>
                 <div className="space-y-4">
                   <div className="flex justify-between text-sm">
-                    <span>Entries: {listing.entries}/{listing.maxEntries}</span>
-                    <span>{Math.round((listing.entries / listing.maxEntries) * 100)}%</span>
+                    <span>Entries: {listing.participants?.length || 0}/{listing.quantity || 1}</span>
+                    <span>{Math.round(((listing.participants?.length || 0) / (listing.quantity || 1)) * 100)}%</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-3">
                     <div
                       className="bg-orange-500 h-3 rounded-full"
-                      style={{ width: `${(listing.entries / listing.maxEntries) * 100}%` }}
+                      style={{ width: `${((listing.participants?.length || 0) / (listing.quantity || 1)) * 100}%` }}
                     ></div>
                   </div>
                   <div className="text-sm text-gray-600">
-                    Ends: {listing.endTime.toLocaleDateString()} at {listing.endTime.toLocaleTimeString()}
+                    {listing.deadline ? `Ends: ${new Date(listing.deadline * 1000).toLocaleDateString()} at ${new Date(listing.deadline * 1000).toLocaleTimeString()}` : 'No deadline set'}
                   </div>
                 </div>
               </div>
@@ -207,7 +242,7 @@ export default function ListingDetailPage({ params }: ListingPageProps) {
               <div className="bg-white p-4 rounded-lg border border-gray-200">
                 <h3 className="font-semibold text-gray-900 mb-2">Purchase Details</h3>
                 <div className="text-sm text-gray-600">
-                  {listing.inStock ? (
+                  {listing.isActive ? (
                     <span className="text-green-600">✓ In Stock - Ready to ship</span>
                   ) : (
                     <span className="text-red-600">✗ Out of Stock</span>
@@ -220,15 +255,17 @@ export default function ListingDetailPage({ params }: ListingPageProps) {
             <div className="bg-gradient-to-r from-purple-600 to-orange-500 p-6 rounded-lg text-white">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <div className="text-2xl font-bold">${listing.price}</div>
+                  <div className="text-2xl font-bold">{listing.price} FLOW</div>
                   <div className="text-purple-100">
                     {listing.type === 'raffle' ? 'per raffle entry' : 'total price'}
                   </div>
                 </div>
-                {listing.type === 'raffle' && (
+                {listing.type === 'raffle' && listing.deadline && (
                   <div className="text-right">
                     <div className="text-sm opacity-90">Time remaining</div>
-                    <div className="font-semibold">23h 45m</div>
+                    <div className="font-semibold">
+                      {Math.max(0, Math.floor((listing.deadline * 1000 - Date.now()) / (1000 * 60 * 60)))}h {Math.max(0, Math.floor(((listing.deadline * 1000 - Date.now()) % (1000 * 60 * 60)) / (1000 * 60)))}m
+                    </div>
                   </div>
                 )}
               </div>
@@ -238,24 +275,23 @@ export default function ListingDetailPage({ params }: ListingPageProps) {
                   <div className="text-center text-purple-100 text-sm">
                     🔐 Self.xyz verification required to {listing.type === 'raffle' ? 'enter raffle' : 'purchase'}
                   </div>
-                  <Button
-                    variant="outline"
-                    className="w-full bg-white/20 border-white/30 text-white hover:bg-white/30"
+                  <button
+                    className="w-full bg-white/20 border border-white/30 text-white hover:bg-white/30 font-semibold px-4 py-3 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 cursor-not-allowed opacity-60"
                     disabled
                   >
                     {listing.type === 'raffle' ? '🎰 Enter Raffle' : '⚡ Buy Now'}
-                  </Button>
+                  </button>
                 </div>
               ) : (
-                <Button
-                  className="w-full bg-white text-purple-600 hover:bg-gray-50 font-semibold"
+                <button
+                  className="w-full bg-white text-purple-600 hover:bg-gray-50 font-semibold px-4 py-3 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   onClick={handlePurchase}
                   disabled={transactionLoading || walletLoading}
                 >
                   {transactionLoading ? "Processing..." :
                    !isConnected ? "🔗 Connect Wallet to Continue" :
                    listing.type === 'raffle' ? '🎰 Enter Raffle' : '⚡ Buy Now'}
-                </Button>
+                </button>
               )}
 
               <div className="text-sm text-purple-100 text-center mt-3">

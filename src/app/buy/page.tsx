@@ -21,54 +21,65 @@ export default function BuyPage() {
   
   const [listings, setListings] = useState<any[]>([]);
   const [filter, setFilter] = useState<"all" | "direct" | "raffle">("all");
-  const [sortBy, setSortBy] = useState<"price" | "newest" | "popularity">("newest");
 
   // Load real listings from the blockchain
-  useEffect(() => {
-    const loadListings = async () => {
-      try {
-        console.log("🔄 [BUY_PAGE] Loading active listings from blockchain...");
-        const realListings = await getActiveListings();
-        console.log("📋 [BUY_PAGE] Received listings:", realListings);
-        
-        if (realListings && realListings.length > 0) {
-          setListings(realListings);
-          console.log("✅ [BUY_PAGE] Successfully loaded", realListings.length, "listings");
-        } else {
-          console.log("📭 [BUY_PAGE] No listings found");
-          setListings([]);
-        }
-      } catch (error) {
-        console.error("❌ [BUY_PAGE] Failed to load listings:", error);
+  const loadListings = async () => {
+    try {
+      console.log("🔄 [BUY_PAGE] Loading active listings from blockchain...");
+      const realListings = await getActiveListings();
+      console.log("📋 [BUY_PAGE] Received listings:", realListings);
+      
+      if (realListings && realListings.length > 0) {
+        setListings(realListings);
+        console.log("✅ [BUY_PAGE] Successfully loaded", realListings.length, "listings");
+      } else {
+        console.log("📭 [BUY_PAGE] No listings found");
         setListings([]);
       }
-    };
+    } catch (error) {
+      console.error("❌ [BUY_PAGE] Failed to load listings:", error);
+      setListings([]);
+    }
+  };
+
+  useEffect(() => {
+    // Add a small delay to ensure the hook is fully initialized
+    const timer = setTimeout(() => {
+      loadListings();
+    }, 100);
     
-    loadListings();
-  }, [getActiveListings]);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Refresh listings when page becomes visible (e.g., returning from purchase)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        console.log("🔄 [BUY_PAGE] Page became visible, refreshing listings...");
+        loadListings();
+      }
+    };
+
+    const handleFocus = () => {
+      console.log("🔄 [BUY_PAGE] Page focused, refreshing listings...");
+      loadListings();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, []);
 
   const filteredListings = listings.filter(listing => {
     if (filter === "all") return true;
     return listing.type === filter;
   });
 
-  const sortedListings = [...filteredListings].sort((a, b) => {
-    switch (sortBy) {
-      case "price":
-        return a.price - b.price;
-      case "newest":
-        // Sort by creation date (newest first)
-        return (b.createdAt || 0) - (a.createdAt || 0);
-      case "popularity":
-        // Sort by number of participants (for raffles) or availability (for direct)
-        if (a.type === 'raffle' && b.type === 'raffle') {
-          return (b.participants?.length || 0) - (a.participants?.length || 0);
-        }
-        return a.isActive ? -1 : 1;
-      default:
-        return 0;
-    }
-  });
+  // No sorting - display listings as they come from blockchain
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -111,19 +122,6 @@ export default function BuyPage() {
             size="sm"
             onClick={() => {
               console.log("🔄 [BUY_PAGE] Manual refresh triggered");
-              const loadListings = async () => {
-                try {
-                  const realListings = await getActiveListings();
-                  if (realListings && realListings.length > 0) {
-                    setListings(realListings);
-                    console.log("✅ [BUY_PAGE] Refreshed listings:", realListings.length);
-                  } else {
-                    setListings([]);
-                  }
-                } catch (error) {
-                  console.error("❌ [BUY_PAGE] Refresh failed:", error);
-                }
-              };
               loadListings();
             }}
             disabled={listingsLoading}
@@ -132,8 +130,8 @@ export default function BuyPage() {
           </Button>
         </div>
 
-        {/* Filters and Sort */}
-        <div className="mb-8 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+        {/* Filters */}
+        <div className="mb-8">
           <div className="flex flex-wrap gap-2">
             <Button
               variant={filter === "all" ? "primary" : "outline"}
@@ -157,20 +155,6 @@ export default function BuyPage() {
               Raffles ({listings.filter(l => l.type === "raffle").length})
             </Button>
           </div>
-          
-          <div className="flex items-center space-x-2">
-            <label htmlFor="sort" className="text-sm text-gray-600">Sort by:</label>
-            <select
-              id="sort"
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as any)}
-              className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-            >
-              <option value="newest">Newest</option>
-              <option value="price">Price</option>
-              <option value="popularity">Popularity</option>
-            </select>
-          </div>
         </div>
 
         {/* Listings Grid */}
@@ -178,13 +162,25 @@ export default function BuyPage() {
           <div className="text-center py-12">
             <div className="text-gray-500">Loading listings...</div>
           </div>
-        ) : sortedListings.length === 0 ? (
+        ) : filteredListings.length === 0 ? (
           <div className="text-center py-12">
-            <div className="text-gray-500">No listings found</div>
+            <div className="text-gray-500 mb-2">No active listings found</div>
+            <div className="text-sm text-gray-400">
+              {filter === "all" 
+                ? "All items may have been purchased or raffles may have ended"
+                : `${filter === "direct" ? "Direct purchase" : "Raffle"} items may have been sold or ended`
+              }
+            </div>
+            <button
+              onClick={loadListings}
+              className="mt-4 text-purple-600 hover:text-purple-700 text-sm font-medium"
+            >
+              🔄 Refresh to check for new listings
+            </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {sortedListings.map((listing) => (
+            {filteredListings.map((listing) => (
               <Link key={listing.id} href={`/listings/${listing.id}`}>
                 <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
                   <img
@@ -216,15 +212,9 @@ export default function BuyPage() {
                     </p>
                     
                     <div className="flex items-center justify-between mb-3">
-                      <div className="text-2xl font-bold text-gray-900">
-                        ${listing.price} FLOW
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <span className="text-yellow-500">⭐</span>
-                        <span className="text-sm text-gray-600">
-                          {listing.sellerReputation || 4.5}
-                        </span>
-                      </div>
+                  <div className="text-2xl font-bold text-gray-900">
+                    {listing.price} FLOW
+                  </div>
                     </div>
                     
                     {listing.type === 'raffle' && (

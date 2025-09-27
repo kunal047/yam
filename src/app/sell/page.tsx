@@ -21,9 +21,9 @@ export default function SellPage() {
     setShowForm(false);
     setErrorMessage("");
     
-    // Navigate to listing detail view after a short delay
+    // Navigate to buy page after a short delay
     setTimeout(() => {
-      router.push(`/listings/${listingId}?tx=${transactionId}`);
+      router.push('/buy');
     }, 2000);
   };
 
@@ -83,7 +83,7 @@ export default function SellPage() {
                 <div className="text-sm text-green-700 space-y-1">
                   <p><strong>Listing ID:</strong> {successMessage.split('ID: ')[1]}</p>
                   <p><strong>Transaction:</strong> Successfully processed on Flow testnet</p>
-                  <p className="text-green-600">Redirecting to listing details...</p>
+                  <p className="text-green-600">Redirecting to buy page...</p>
                 </div>
               </div>
             </div>

@@ -23,27 +23,40 @@ interface FormData {
 }
 
 const COUNTRIES = [
-  { code: "US", name: "United States" },
-  { code: "CA", name: "Canada" },
-  { code: "GB", name: "United Kingdom" },
-  { code: "DE", name: "Germany" },
-  { code: "FR", name: "France" },
-  { code: "IT", name: "Italy" },
-  { code: "ES", name: "Spain" },
-  { code: "NL", name: "Netherlands" },
-  { code: "AU", name: "Australia" },
-  { code: "JP", name: "Japan" },
-  { code: "KR", name: "South Korea" },
-  { code: "SG", name: "Singapore" },
-  { code: "IN", name: "India" },
-  { code: "BR", name: "Brazil" },
-  { code: "MX", name: "Mexico" },
-  { code: "AR", name: "Argentina" },
-  { code: "ZA", name: "South Africa" },
-  { code: "NG", name: "Nigeria" },
-  { code: "EG", name: "Egypt" },
-  { code: "KE", name: "Kenya" },
+  { code: "US", name: "United States", code3: "USA" },
+  { code: "CA", name: "Canada", code3: "CAN" },
+  { code: "GB", name: "United Kingdom", code3: "GBR" },
+  { code: "DE", name: "Germany", code3: "DEU" },
+  { code: "FR", name: "France", code3: "FRA" },
+  { code: "IT", name: "Italy", code3: "ITA" },
+  { code: "ES", name: "Spain", code3: "ESP" },
+  { code: "NL", name: "Netherlands", code3: "NLD" },
+  { code: "AU", name: "Australia", code3: "AUS" },
+  { code: "JP", name: "Japan", code3: "JPN" },
+  { code: "KR", name: "South Korea", code3: "KOR" },
+  { code: "SG", name: "Singapore", code3: "SGP" },
+  { code: "IN", name: "India", code3: "IND" },
+  { code: "BR", name: "Brazil", code3: "BRA" },
+  { code: "MX", name: "Mexico", code3: "MEX" },
+  { code: "AR", name: "Argentina", code3: "ARG" },
+  { code: "ZA", name: "South Africa", code3: "ZAF" },
+  { code: "NG", name: "Nigeria", code3: "NGA" },
+  { code: "EG", name: "Egypt", code3: "EGY" },
+  { code: "KE", name: "Kenya", code3: "KEN" },
 ];
+
+// Helper function to convert between 2-letter and 3-letter country codes
+const convertCountryCode = (code: string, from3To2: boolean = false): string => {
+  if (from3To2) {
+    // Convert 3-letter to 2-letter
+    const country = COUNTRIES.find(c => c.code3 === code);
+    return country ? country.code : code;
+  } else {
+    // Convert 2-letter to 3-letter
+    const country = COUNTRIES.find(c => c.code === code);
+    return country ? country.code3 : code;
+  }
+};
 
 export default function CreateListingForm({ onSuccess, onError }: CreateListingFormProps) {
   const { isLoggedIn, verification } = useSelfXYZContext();
@@ -51,9 +64,9 @@ export default function CreateListingForm({ onSuccess, onError }: CreateListingF
   const { createListing, loading: transactionLoading } = useListings();
   
   const [formData, setFormData] = useState<FormData>({
-    itemName: "Sample Item",
-    itemDesc: "This is a sample item description. Please provide details about the condition, features, and any other relevant information.",
-    price: "10.00",
+    itemName: "",
+    itemDesc: "",
+    price: "",
     quantity: "1",
     type: "direct",
     deadline: "",
@@ -65,7 +78,9 @@ export default function CreateListingForm({ onSuccess, onError }: CreateListingF
 
   // Auto-add seller's nationality to allowed countries
   const sellerNationality = verification.country;
-  const defaultAllowedCountries = sellerNationality ? [sellerNationality] : [];
+  // Convert 3-letter code to 2-letter code for form display
+  const sellerNationality2Letter = sellerNationality ? convertCountryCode(sellerNationality, true) : null;
+  const defaultAllowedCountries = sellerNationality2Letter ? [sellerNationality2Letter] : [];
 
   const validateForm = (): boolean => {
     console.log("🔍 [VALIDATION] Starting form validation");
@@ -184,11 +199,15 @@ export default function CreateListingForm({ onSuccess, onError }: CreateListingF
 
     try {
       // Prepare transaction data
-      const allowedCountries = formData.allowedCountries.length > 0 
+      const allowedCountries2Letter = formData.allowedCountries.length > 0 
         ? formData.allowedCountries 
         : defaultAllowedCountries;
+      
+      // Convert 2-letter codes to 3-letter codes for the contract
+      const allowedCountries = allowedCountries2Letter.map(code => convertCountryCode(code, false));
 
-      console.log("🌍 [FORM_SUBMIT] Allowed countries:", allowedCountries);
+      console.log("🌍 [FORM_SUBMIT] Allowed countries (2-letter):", allowedCountries2Letter);
+      console.log("🌍 [FORM_SUBMIT] Allowed countries (3-letter):", allowedCountries);
 
       if (!sellerNationality) {
         console.log("❌ [FORM_SUBMIT] No seller nationality found, aborting");
@@ -220,9 +239,9 @@ export default function CreateListingForm({ onSuccess, onError }: CreateListingF
       // Reset form
       console.log("🔄 [FORM_SUBMIT] Resetting form to default values");
       setFormData({
-        itemName: "Sample Item",
-        itemDesc: "This is a sample item description. Please provide details about the condition, features, and any other relevant information.",
-        price: "10.00",
+        itemName: "",
+        itemDesc: "",
+        price: "",
         quantity: "1",
         type: "direct",
         deadline: "",
@@ -267,7 +286,7 @@ export default function CreateListingForm({ onSuccess, onError }: CreateListingF
               <>
                 <Badge variant="success">✓ Verified via Self.xyz</Badge>
                 <span className="text-sm text-gray-600">
-                  Nationality: {sellerNationality}
+                  Nationality: {sellerNationality2Letter ? COUNTRIES.find(c => c.code === sellerNationality2Letter)?.name : sellerNationality}
                 </span>
               </>
             ) : (
@@ -402,9 +421,9 @@ export default function CreateListingForm({ onSuccess, onError }: CreateListingF
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Allowed Countries *
           </label>
-        {sellerNationality && (
+        {sellerNationality2Letter && (
           <div className="text-sm text-gray-600 mb-3">
-            Your nationality ({sellerNationality}) is automatically included
+            Your nationality ({COUNTRIES.find(c => c.code === sellerNationality2Letter)?.name}) is automatically included
           </div>
         )}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-40 overflow-y-auto border border-gray-300 rounded-md p-3">
@@ -412,12 +431,12 @@ export default function CreateListingForm({ onSuccess, onError }: CreateListingF
               <label key={country.code} className="flex items-center text-sm text-black">
                 <input
                   type="checkbox"
-                  checked={formData.allowedCountries.includes(country.code) || country.code === sellerNationality}
+                  checked={formData.allowedCountries.includes(country.code) || country.code === sellerNationality2Letter}
                   onChange={() => handleCountryToggle(country.code)}
-                  disabled={country.code === sellerNationality}
+                  disabled={country.code === sellerNationality2Letter}
                   className="mr-2"
                 />
-                <span className={country.code === sellerNationality ? "text-purple-600 font-medium" : ""}>
+                <span className={country.code === sellerNationality2Letter ? "text-purple-600 font-medium" : ""}>
                   {country.name}
                 </span>
               </label>
