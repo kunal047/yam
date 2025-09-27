@@ -36,34 +36,91 @@ export function useListings() {
   const [error, setError] = useState<string | null>(null);
 
   const createListing = useCallback(async (listingData: ListingData): Promise<string> => {
+    console.log("🚀 [CREATE_LISTING] Starting listing creation process");
+    console.log("📋 [CREATE_LISTING] Input data:", JSON.stringify(listingData, null, 2));
+    
     setLoading(true);
     setError(null);
 
+    // Mock mode for testing - bypass Flow transactions
+    const MOCK_MODE = false; // Temporarily disabled to test real transactions
+    
+    if (MOCK_MODE) {
+      console.log("🎭 [CREATE_LISTING] Running in MOCK MODE - bypassing Flow transactions");
+      try {
+        // Simulate transaction delay
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        const listingId = `mock_listing_${Date.now()}`;
+        console.log("🎉 [CREATE_LISTING] Mock listing created with ID:", listingId);
+        return listingId;
+      } catch (err) {
+        console.error("❌ [CREATE_LISTING] Mock error:", err);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    }
+
     try {
-      // First verify the seller with Self.xyz nationality and nullifier
-      const verifySellerTransaction = `
-        import Listings from 0x1f67c2e66c7e3ee3
-
-        transaction(nationality: String, nullifier: String) {
-          execute {
-            Listings.verifySeller(nationality: nationality, nullifier: nullifier)
-          }
-        }
-      `;
-
-      await fcl.mutate({
-        cadence: verifySellerTransaction,
-        args: (arg, t) => [
-          arg(listingData.sellerNationality, t.String),
-          arg(listingData.sellerNullifier, t.String)
-        ]
+      // Create a timeout promise to prevent hanging (increased to 60 seconds for Flow testnet)
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          console.error("⏰ [CREATE_LISTING] Transaction timeout after 60 seconds");
+          reject(new Error("Transaction timeout after 60 seconds. Please check your wallet and try again."));
+        }, 60000);
       });
 
-      // Then create the listing using admin resource
+      // Check if user is authenticated
+      console.log("🔐 [CREATE_LISTING] Checking user authentication...");
+      const currentUser = await fcl.currentUser.snapshot();
+      console.log("👤 [CREATE_LISTING] Current user:", currentUser);
+      
+      if (!currentUser.loggedIn) {
+        throw new Error("User not authenticated");
+      }
+
+      // Optional: Check if seller is already verified (to avoid unnecessary verification)
+      console.log("🔍 [CREATE_LISTING] Checking if seller is already verified...");
+      try {
+        const checkVerifiedScript = `
+          import YAMListings from 0x1f67c2e66c7e3ee3
+
+          pub fun main(seller: Address): Bool {
+            return YAMListings.isSellerVerified(seller: seller)
+          }
+        `;
+
+        const isVerified = await fcl.query({
+          cadence: checkVerifiedScript,
+          args: (arg, t) => [
+            arg(currentUser.addr || "", t.Address)
+          ]
+        });
+        
+        console.log("✅ [CREATE_LISTING] Seller verification status:", isVerified);
+      } catch (err) {
+        console.log("⚠️ [CREATE_LISTING] Could not check verification status, proceeding anyway:", err);
+      }
+
+      // Create a single transaction that both verifies the seller and creates the listing
+      console.log("🏗️ [CREATE_LISTING] Starting combined verification and listing creation...");
+      console.log("📝 [CREATE_LISTING] Transaction params:", {
+        itemName: listingData.itemName,
+        itemDesc: listingData.itemDesc,
+        price: listingData.price,
+        type: listingData.type,
+        deadline: listingData.deadline,
+        allowedCountries: listingData.allowedCountries,
+        quantity: listingData.quantity,
+        sellerNationality: listingData.sellerNationality,
+        sellerNullifier: listingData.sellerNullifier
+      });
+
       const createListingTransaction = `
         import FungibleToken from 0x9a0766d93b6608b7
         import FlowToken from 0x7e60df042a9c0868
-        import Listings from 0x1f67c2e66c7e3ee3
+        import YAMListings from 0x1f67c2e66c7e3ee3
 
         transaction(
           itemName: String,
@@ -73,20 +130,26 @@ export function useListings() {
           deadline: UFix64?,
           allowedCountries: [String],
           quantity: UInt64,
-          sellerNationality: String
+          sellerNationality: String,
+          sellerNullifier: String
         ) {
-          let admin: &Listings.Admin
           let listingId: UInt64
           
           prepare(acct: AuthAccount) {
-            // Get admin resource from account storage
-            self.admin = acct.borrow<&Listings.Admin>(from: Listings.AdminStoragePath)
-              ?? panic("Admin resource not found")
+            // No special preparation needed
           }
           
           execute {
-            // Create listing using admin resource
-            self.listingId = self.admin.createListing(
+            // First verify the seller
+            YAMListings.verifySeller(
+              nationality: sellerNationality,
+              nullifier: sellerNullifier,
+              seller: acct.address
+            )
+            
+            // Then create the listing using contract's admin resource
+            let admin = YAMListings.getAdmin()
+            self.listingId = admin.createListing(
               itemName: itemName,
               itemDesc: itemDesc,
               price: price,
@@ -95,7 +158,7 @@ export function useListings() {
               allowedCountries: allowedCountries,
               quantity: quantity,
               sellerNationality: sellerNationality,
-              seller: self.admin.account.address
+              seller: acct.address
             )
             
             log("Listing created with ID: ".concat(self.listingId.toString()))
@@ -103,7 +166,10 @@ export function useListings() {
         }
       `;
 
-      const result = await fcl.mutate({
+      console.log("📜 [CREATE_LISTING] Combined transaction cadence:", createListingTransaction);
+
+      console.log("🔧 [CREATE_LISTING] Building combined transaction...");
+      const createPromise = fcl.mutate({
         cadence: createListingTransaction,
         args: (arg, t) => [
           arg(listingData.itemName, t.String),
@@ -113,20 +179,51 @@ export function useListings() {
           arg(listingData.deadline ? listingData.deadline.toString() : null, t.Optional(t.UFix64)),
           arg(listingData.allowedCountries, t.Array(t.String)),
           arg(listingData.quantity.toString(), t.UInt64),
-          arg(listingData.sellerNationality, t.String)
+          arg(listingData.sellerNationality, t.String),
+          arg(listingData.sellerNullifier, t.String)
         ]
       });
+      console.log("🔧 [CREATE_LISTING] Combined transaction built, starting execution...");
+
+      console.log("⏳ [CREATE_LISTING] Waiting for combined transaction...");
+      console.log("🔍 [CREATE_LISTING] About to start Promise.race for combined transaction...");
+      
+      const createResult = await Promise.race([createPromise, timeoutPromise]);
+      console.log("✅ [CREATE_LISTING] Combined transaction completed:", createResult);
 
       // Extract listing ID from transaction result
       // In a real implementation, you would parse the transaction result
       const listingId = `listing_${Date.now()}`;
       
+      console.log("🎉 [CREATE_LISTING] Listing created successfully with ID:", listingId);
       return listingId;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to create listing";
+      console.error("❌ [CREATE_LISTING] Error occurred:", err);
+      console.error("❌ [CREATE_LISTING] Error stack:", err instanceof Error ? err.stack : "No stack trace");
+      console.error("❌ [CREATE_LISTING] Error type:", typeof err);
+      console.error("❌ [CREATE_LISTING] Error constructor:", err?.constructor?.name);
+      
+      let errorMessage = err instanceof Error ? err.message : "Failed to create listing";
+      
+      // Provide more helpful error messages for common issues
+      if (errorMessage.includes("Transaction timeout")) {
+        errorMessage = "Transaction is taking too long. Please check your wallet connection and try again.";
+      } else if (errorMessage.includes("Nullifier already used")) {
+        errorMessage = "This identity has already been used. Please use a different Self.xyz verification.";
+      } else if (errorMessage.includes("User not authenticated")) {
+        errorMessage = "Please connect your wallet and verify your identity with Self.xyz.";
+      } else if (errorMessage.includes("Insufficient balance")) {
+        errorMessage = "Insufficient Flow tokens. Please add tokens to your wallet.";
+      } else if (errorMessage.includes("Admin resource not found")) {
+        errorMessage = "Contract not properly deployed. Please contact support.";
+      }
+      
+      console.error("❌ [CREATE_LISTING] Final error message:", errorMessage);
+      
       setError(errorMessage);
       throw new Error(errorMessage);
     } finally {
+      console.log("🏁 [CREATE_LISTING] Process completed, setting loading to false");
       setLoading(false);
     }
   }, []);
@@ -139,7 +236,7 @@ export function useListings() {
       const transaction = `
         import FungibleToken from 0x9a0766d93b6608b7
         import FlowToken from 0x7e60df042a9c0868
-        import Listings from 0x1f67c2e66c7e3ee3
+        import YAMListings from 0x1f67c2e66c7e3ee3
 
         transaction(listingId: UInt64, buyerNationality: String, paymentAmount: UFix64) {
           let buyerVault: &FlowToken.Vault
@@ -192,7 +289,7 @@ export function useListings() {
       const transaction = `
         import FungibleToken from 0x9a0766d93b6608b7
         import FlowToken from 0x7e60df042a9c0868
-        import Listings from 0x1f67c2e66c7e3ee3
+        import YAMListings from 0x1f67c2e66c7e3ee3
 
         transaction(listingId: UInt64, buyerNationality: String, nullifier: String, paymentAmount: UFix64) {
           let buyerVault: &FlowToken.Vault
@@ -247,7 +344,7 @@ export function useListings() {
       const transaction = `
         import FungibleToken from 0x9a0766d93b6608b7
         import FlowToken from 0x7e60df042a9c0868
-        import Listings from 0x1f67c2e66c7e3ee3
+        import YAMListings from 0x1f67c2e66c7e3ee3
 
         transaction(listingId: UInt64) {
           let winners: [Address]
@@ -306,7 +403,7 @@ export function useListings() {
   const getListing = useCallback(async (listingId: string): Promise<Listing | null> => {
     try {
       const script = `
-        import Listings from 0x1f67c2e66c7e3ee3
+        import YAMListings from 0x1f67c2e66c7e3ee3
 
         pub fun main(listingId: UInt64): Listings.Listing? {
           return Listings.getListing(id: listingId)
@@ -330,7 +427,7 @@ export function useListings() {
   const getActiveListings = useCallback(async (): Promise<Listing[]> => {
     try {
       const script = `
-        import Listings from 0x1f67c2e66c7e3ee3
+        import YAMListings from 0x1f67c2e66c7e3ee3
 
         pub fun main(): [Listings.Listing] {
           return Listings.getActiveListings()

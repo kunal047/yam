@@ -1,4 +1,4 @@
-import Listings from 0x1f67c2e66c7e3ee3
+import YAMListings from 0x1f67c2e66c7e3ee3
 
 transaction(
     nationality: String,
@@ -6,9 +6,10 @@ transaction(
 ) {
     execute {
         // Verify seller with Self.xyz data
-        Listings.verifySeller(
+        YAMListings.verifySeller(
             nationality: nationality,
-            nullifier: nullifier
+            nullifier: nullifier,
+            seller: self.account.address
         )
         
         log("Seller verified with nationality: ".concat(nationality))

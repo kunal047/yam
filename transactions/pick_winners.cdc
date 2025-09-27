@@ -1,6 +1,6 @@
 import FungibleToken from 0x9a0766d93b6608b7
 import FlowToken from 0x7e60df042a9c0868
-import Listings from 0x1f67c2e66c7e3ee3
+import YAMListings from 0x1f67c2e66c7e3ee3
 
 transaction(listingId: UInt64) {
     let winners: [Address]
@@ -15,14 +15,14 @@ transaction(listingId: UInt64) {
     
     execute {
         // Pick winners for the raffle
-        self.winners = Listings.pickWinners(listingId: listingId)
+        self.winners = YAMListings.pickWinners(listingId: listingId)
         
         // Transfer escrow to winner (assuming caller is the winner)
         let winner = self.winners[0]
-        let listing = Listings.getListing(id: listingId)
+        let listing = YAMListings.getListing(id: listingId)
         
         if listing != nil {
-            self.payment <- Listings.transferToWinner(
+            self.payment <- YAMListings.transferToWinner(
                 listingId: listingId,
                 winner: winner,
                 amount: listing!.price

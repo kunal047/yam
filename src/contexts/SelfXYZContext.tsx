@@ -3,6 +3,29 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import SelfXYZModal from "@/components/SelfXYZModal";
 
+// Function to check if user exists in verification-results.json
+async function checkVerificationResults(walletAddress: string): Promise<Record<string, unknown> | null> {
+  try {
+    const response = await fetch('/api/check-verification', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ walletAddress }),
+    });
+    
+    if (response.ok) {
+      const result = await response.json();
+      return result.exists ? result.verificationData : null;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Failed to check verification results:', error);
+    return null;
+  }
+}
+
 export interface CredentialSubject {
   age?: number;
   nationality?: string;
@@ -44,6 +67,7 @@ interface SelfXYZContextType {
   handleVerificationSuccess: (apiResponse: Record<string, unknown>) => void;
   handleVerificationError: () => void;
   updateVerificationFromAPI: (apiResponse: Record<string, unknown>) => void;
+  checkExistingVerification: (walletAddress: string) => Promise<boolean>;
 }
 
 const SelfXYZContext = createContext<SelfXYZContextType | undefined>(undefined);
@@ -199,6 +223,23 @@ export function SelfXYZProvider({ children }: SelfXYZProviderProps) {
     localStorage.removeItem(STORAGE_KEY);
   };
 
+  const checkExistingVerification = async (walletAddress: string): Promise<boolean> => {
+    try {
+      const verificationData = await checkVerificationResults(walletAddress);
+      
+      if (verificationData && verificationData.status === "success") {
+        // User exists in verification-results.json, update verification state
+        updateVerificationFromAPI(verificationData);
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Failed to check existing verification:', error);
+      return false;
+    }
+  };
+
   const value: SelfXYZContextType = {
     verification,
     loading,
@@ -210,6 +251,7 @@ export function SelfXYZProvider({ children }: SelfXYZProviderProps) {
     handleVerificationSuccess,
     handleVerificationError,
     updateVerificationFromAPI,
+    checkExistingVerification,
   };
 
   return (

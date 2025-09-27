@@ -1,6 +1,6 @@
 {
 	"contracts": {
-		"Listings": "./contracts/Listings.cdc"
+		"YAMListings": "./contracts/Listings.cdc"
 	},
 	"networks": {
 		"emulator": "127.0.0.1:3569",
@@ -8,6 +8,10 @@
 		"testnet": "access.devnet.nodes.onflow.org:9000"
 	},
 	"accounts": {
+		"": {
+			"address": "179b6b1cb6755e31",
+			"key": "adb261005207d87b70f9d5ae140655a39f0b7389375ea4647d106ea8c2c8d266"
+		},
 		"default": {
 			"address": "26535255e80d43c1",
 			"key": {
@@ -20,7 +24,7 @@
 			"key": "21c5dfdeb0ff03a7a73ef39788563b62c89adea67bbb21c95eae0b5c494e1485"
 		},
 		"yam-marketplace": {
-			"address": "0x1f67c2e66c7e3ee3",
+			"address": "1f67c2e66c7e3ee3",
 			"key": {
 				"type": "hex",
 				"index": 0,
@@ -31,14 +35,19 @@
 		}
 	},
 	"deployments": {
+		"emulator": {
+			"emulator-account": [
+				"YAMListings"
+			]
+		},
 		"mainnet": {
 			"yam-marketplace": [
-				"Listings"
+				"YAMListings"
 			]
 		},
 		"testnet": {
 			"yam-marketplace": [
-				"Listings"
+				"YAMListings"
 			]
 		}
 	}

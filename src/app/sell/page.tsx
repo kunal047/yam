@@ -160,7 +160,7 @@ export default function SellPage() {
 
             {isLoggedIn ? (
               <Button
-                className="w-full"
+                className="w-full text-black"
                 onClick={() => setShowForm(true)}
               >
                 Create Raffle Listing
@@ -168,7 +168,7 @@ export default function SellPage() {
             ) : (
               <Button
                 variant="secondary"
-                className="w-full opacity-50 cursor-not-allowed"
+                className="w-full opacity-50 cursor-not-allowed text-black"
                 disabled
               >
                 Login with Self.xyz First
@@ -208,7 +208,7 @@ export default function SellPage() {
             {isLoggedIn ? (
               <Button
                 variant="secondary"
-                className="w-full"
+                className="w-full text-black"
                 onClick={() => setShowForm(true)}
               >
                 Create Direct Listing
@@ -216,7 +216,7 @@ export default function SellPage() {
             ) : (
               <Button
                 variant="secondary"
-                className="w-full opacity-50 cursor-not-allowed"
+                className="w-full opacity-50 cursor-not-allowed text-black"
                 disabled
               >
                 Login with Self.xyz First

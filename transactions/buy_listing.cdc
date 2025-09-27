@@ -1,6 +1,6 @@
 import FungibleToken from 0x9a0766d93b6608b7
 import FlowToken from 0x7e60df042a9c0868
-import Listings from 0x1f67c2e66c7e3ee3
+import YAMListings from 0x1f67c2e66c7e3ee3
 
 transaction(
     listingId: UInt64,
@@ -21,7 +21,7 @@ transaction(
     
     execute {
         // Buy the listing
-        Listings.buyListing(
+            YAMListings.buyListing(
             listingId: listingId,
             buyerNationality: buyerNationality,
             payment: <- self.payment

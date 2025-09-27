@@ -51,9 +51,9 @@ export default function CreateListingForm({ onSuccess, onError }: CreateListingF
   const { createListing, loading: transactionLoading } = useListings();
   
   const [formData, setFormData] = useState<FormData>({
-    itemName: "",
-    itemDesc: "",
-    price: "",
+    itemName: "Sample Item",
+    itemDesc: "This is a sample item description. Please provide details about the condition, features, and any other relevant information.",
+    price: "10.00",
     quantity: "1",
     type: "direct",
     deadline: "",
@@ -68,45 +68,79 @@ export default function CreateListingForm({ onSuccess, onError }: CreateListingF
   const defaultAllowedCountries = sellerNationality ? [sellerNationality] : [];
 
   const validateForm = (): boolean => {
+    console.log("🔍 [VALIDATION] Starting form validation");
+    console.log("📋 [VALIDATION] Form data to validate:", JSON.stringify(formData, null, 2));
+    
     const newErrors: Record<string, string> = {};
 
+    // Validate item name
     if (!formData.itemName.trim()) {
       newErrors.itemName = "Item name is required";
+      console.log("❌ [VALIDATION] Item name validation failed: empty");
+    } else {
+      console.log("✅ [VALIDATION] Item name validation passed:", formData.itemName);
     }
 
+    // Validate description
     if (!formData.itemDesc.trim()) {
       newErrors.itemDesc = "Description is required";
+      console.log("❌ [VALIDATION] Description validation failed: empty");
+    } else {
+      console.log("✅ [VALIDATION] Description validation passed");
     }
 
+    // Validate price
     const price = parseFloat(formData.price);
     if (!formData.price || isNaN(price) || price <= 0) {
       newErrors.price = "Price must be greater than 0";
+      console.log("❌ [VALIDATION] Price validation failed:", { price, isNaN: isNaN(price) });
+    } else {
+      console.log("✅ [VALIDATION] Price validation passed:", price);
     }
 
+    // Validate quantity
     const quantity = parseInt(formData.quantity);
     if (!formData.quantity || isNaN(quantity) || quantity <= 0) {
       newErrors.quantity = "Quantity must be greater than 0";
+      console.log("❌ [VALIDATION] Quantity validation failed:", { quantity, isNaN: isNaN(quantity) });
+    } else {
+      console.log("✅ [VALIDATION] Quantity validation passed:", quantity);
     }
 
+    // Validate raffle deadline
     if (formData.type === "raffle") {
       if (!formData.deadline) {
         newErrors.deadline = "Deadline is required for raffles";
+        console.log("❌ [VALIDATION] Raffle deadline validation failed: empty");
       } else {
         const deadlineDate = new Date(formData.deadline);
         const now = new Date();
         if (deadlineDate <= now) {
           newErrors.deadline = "Deadline must be in the future";
+          console.log("❌ [VALIDATION] Raffle deadline validation failed: not in future", { deadlineDate, now });
+        } else {
+          console.log("✅ [VALIDATION] Raffle deadline validation passed:", deadlineDate);
         }
       }
     }
 
+    // Validate allowed countries
     const allowedCountries = formData.allowedCountries.length > 0 
       ? formData.allowedCountries 
       : defaultAllowedCountries;
     
     if (allowedCountries.length === 0) {
       newErrors.allowedCountries = "At least one country must be selected";
+      console.log("❌ [VALIDATION] Allowed countries validation failed: none selected");
+    } else {
+      console.log("✅ [VALIDATION] Allowed countries validation passed:", allowedCountries);
     }
+
+    console.log("📊 [VALIDATION] Validation results:", {
+      errors: newErrors,
+      isValid: Object.keys(newErrors).length === 0,
+      errorCount: Object.keys(newErrors).length
+    });
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -115,24 +149,37 @@ export default function CreateListingForm({ onSuccess, onError }: CreateListingF
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log("📝 [FORM_SUBMIT] Form submission started");
+    console.log("📋 [FORM_SUBMIT] Form data:", JSON.stringify(formData, null, 2));
+    console.log("🔐 [FORM_SUBMIT] Verification status:", { isLoggedIn, sellerNationality });
+    console.log("🔗 [FORM_SUBMIT] Wallet status:", { isConnected });
+    
     if (!isLoggedIn) {
+      console.log("❌ [FORM_SUBMIT] User not logged in, aborting");
       onError?.("Please verify your identity with Self.xyz first");
       return;
     }
 
     if (!isConnected) {
+      console.log("🔗 [FORM_SUBMIT] Wallet not connected, attempting to connect...");
       try {
         await connectWallet();
+        console.log("✅ [FORM_SUBMIT] Wallet connected successfully");
       } catch (err) {
+        console.error("❌ [FORM_SUBMIT] Failed to connect wallet:", err);
         onError?.("Failed to connect wallet");
         return;
       }
     }
 
+    console.log("✅ [FORM_SUBMIT] Starting form validation...");
     if (!validateForm()) {
+      console.log("❌ [FORM_SUBMIT] Form validation failed, aborting");
       return;
     }
+    console.log("✅ [FORM_SUBMIT] Form validation passed");
 
+    console.log("🔄 [FORM_SUBMIT] Setting submitting state to true");
     setIsSubmitting(true);
 
     try {
@@ -141,7 +188,10 @@ export default function CreateListingForm({ onSuccess, onError }: CreateListingF
         ? formData.allowedCountries 
         : defaultAllowedCountries;
 
+      console.log("🌍 [FORM_SUBMIT] Allowed countries:", allowedCountries);
+
       if (!sellerNationality) {
+        console.log("❌ [FORM_SUBMIT] No seller nationality found, aborting");
         onError?.("Please verify your nationality with Self.xyz first");
         return;
       }
@@ -158,16 +208,21 @@ export default function CreateListingForm({ onSuccess, onError }: CreateListingF
         sellerNullifier: verification.nullifier || "",
       };
 
+      console.log("📦 [FORM_SUBMIT] Prepared transaction data:", JSON.stringify(transactionData, null, 2));
+      console.log("🚀 [FORM_SUBMIT] Calling createListing function...");
+
       // Call Flow transaction
       const listingId = await createListing(transactionData);
       
+      console.log("🎉 [FORM_SUBMIT] Listing created successfully with ID:", listingId);
       onSuccess?.(listingId);
       
       // Reset form
+      console.log("🔄 [FORM_SUBMIT] Resetting form to default values");
       setFormData({
-        itemName: "",
-        itemDesc: "",
-        price: "",
+        itemName: "Sample Item",
+        itemDesc: "This is a sample item description. Please provide details about the condition, features, and any other relevant information.",
+        price: "10.00",
         quantity: "1",
         type: "direct",
         deadline: "",
@@ -175,9 +230,15 @@ export default function CreateListingForm({ onSuccess, onError }: CreateListingF
       });
       
     } catch (err) {
-      console.error("Error creating listing:", err);
+      console.error("❌ [FORM_SUBMIT] Error creating listing:", err);
+      console.error("❌ [FORM_SUBMIT] Error details:", {
+        message: err instanceof Error ? err.message : "Unknown error",
+        stack: err instanceof Error ? err.stack : "No stack trace",
+        type: typeof err
+      });
       onError?.(err instanceof Error ? err.message : "Failed to create listing");
     } finally {
+      console.log("🏁 [FORM_SUBMIT] Setting submitting state to false");
       setIsSubmitting(false);
     }
   };
@@ -232,7 +293,7 @@ export default function CreateListingForm({ onSuccess, onError }: CreateListingF
             id="itemName"
             value={formData.itemName}
             onChange={(e) => setFormData(prev => ({ ...prev, itemName: e.target.value }))}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-black"
             placeholder="Enter item name"
           />
           {errors.itemName && <p className="mt-1 text-sm text-red-600">{errors.itemName}</p>}
@@ -248,7 +309,7 @@ export default function CreateListingForm({ onSuccess, onError }: CreateListingF
             value={formData.itemDesc}
             onChange={(e) => setFormData(prev => ({ ...prev, itemDesc: e.target.value }))}
             rows={4}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-black"
             placeholder="Describe your item"
           />
           {errors.itemDesc && <p className="mt-1 text-sm text-red-600">{errors.itemDesc}</p>}
@@ -267,7 +328,7 @@ export default function CreateListingForm({ onSuccess, onError }: CreateListingF
               min="0"
               value={formData.price}
               onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-black"
               placeholder="0.00"
             />
             {errors.price && <p className="mt-1 text-sm text-red-600">{errors.price}</p>}
@@ -283,7 +344,7 @@ export default function CreateListingForm({ onSuccess, onError }: CreateListingF
               min="1"
               value={formData.quantity}
               onChange={(e) => setFormData(prev => ({ ...prev, quantity: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-black"
               placeholder="1"
             />
             {errors.quantity && <p className="mt-1 text-sm text-red-600">{errors.quantity}</p>}
@@ -296,7 +357,7 @@ export default function CreateListingForm({ onSuccess, onError }: CreateListingF
             Listing Type *
           </label>
           <div className="flex space-x-4">
-            <label className="flex items-center">
+            <label className="flex items-center text-black">
               <input
                 type="radio"
                 value="direct"
@@ -306,7 +367,7 @@ export default function CreateListingForm({ onSuccess, onError }: CreateListingF
               />
               Direct Purchase
             </label>
-            <label className="flex items-center">
+            <label className="flex items-center text-black">
               <input
                 type="radio"
                 value="raffle"
@@ -330,7 +391,7 @@ export default function CreateListingForm({ onSuccess, onError }: CreateListingF
               id="deadline"
               value={formData.deadline}
               onChange={(e) => setFormData(prev => ({ ...prev, deadline: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-black"
             />
             {errors.deadline && <p className="mt-1 text-sm text-red-600">{errors.deadline}</p>}
           </div>
@@ -348,7 +409,7 @@ export default function CreateListingForm({ onSuccess, onError }: CreateListingF
         )}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-40 overflow-y-auto border border-gray-300 rounded-md p-3">
             {COUNTRIES.map((country) => (
-              <label key={country.code} className="flex items-center text-sm">
+              <label key={country.code} className="flex items-center text-sm text-black">
                 <input
                   type="checkbox"
                   checked={formData.allowedCountries.includes(country.code) || country.code === sellerNationality}

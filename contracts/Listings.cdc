@@ -1,7 +1,7 @@
 import FungibleToken from 0x9a0766d93b6608b7
 import FlowToken from 0x7e60df042a9c0868
 
-access(all) contract Listings {
+access(all) contract YAMListings {
     
     // Admin resource for managing the contract
     access(all) resource Admin {
@@ -168,17 +168,25 @@ access(all) contract Listings {
     }
 
     // Verify seller with Self.xyz nationality and nullifier
-    access(all) fun verifySeller(nationality: String, nullifier: String) {
-        let caller = self.account.address
+    access(all) fun verifySeller(nationality: String, nullifier: String, seller: Address) {
+        // Check if nullifier is already used by a different seller
+        assert(self.userNullifiers[nullifier] == nil || self.userNullifiers[nullifier] == seller, 
+               message: "Nullifier already used by another seller")
         
-        // Check if nullifier is already used
-        assert(self.userNullifiers[nullifier] == nil, message: "Nullifier already used")
+        // Register the nullifier and seller (only if not already registered)
+        if self.userNullifiers[nullifier] == nil {
+            self.userNullifiers[nullifier] = seller
+        }
+        if self.verifiedSellers[seller] == nil {
+            self.verifiedSellers[seller] = nationality
+        }
         
-        // Register the nullifier and seller
-        self.userNullifiers[nullifier] = caller
-        self.verifiedSellers[caller] = nationality
-        
-        emit SellerVerified(seller: caller, nationality: nationality)
+        emit SellerVerified(seller: seller, nationality: nationality)
+    }
+
+    // Check if seller is verified
+    access(all) fun isSellerVerified(seller: Address): Bool {
+        return self.verifiedSellers[seller] != nil
     }
 
     // Get admin resource

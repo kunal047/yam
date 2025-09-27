@@ -1,6 +1,6 @@
 import FungibleToken from 0x9a0766d93b6608b7
 import FlowToken from 0x7e60df042a9c0868
-import Listings from 0x1f67c2e66c7e3ee3
+        import YAMListings from 0x1f67c2e66c7e3ee3
 
 transaction(
     itemName: String,
@@ -10,20 +10,26 @@ transaction(
     deadline: UFix64?,
     allowedCountries: [String],
     quantity: UInt64,
-    sellerNationality: String
+    sellerNationality: String,
+    sellerNullifier: String
 ) {
-    let admin: &Listings.Admin
     let listingId: UInt64
     
     prepare(acct: AuthAccount) {
-        // Get admin resource from account storage
-        self.admin = acct.borrow<&Listings.Admin>(from: Listings.AdminStoragePath)
-            ?? panic("Admin resource not found")
+        // No special preparation needed
     }
     
     execute {
-        // Create listing using admin resource
-        self.listingId = self.admin.createListing(
+        // First verify the seller
+        YAMListings.verifySeller(
+            nationality: sellerNationality,
+            nullifier: sellerNullifier,
+            seller: acct.address
+        )
+        
+        // Then create the listing using contract's admin resource
+        let admin = YAMListings.getAdmin()
+        self.listingId = admin.createListing(
             itemName: itemName,
             itemDesc: itemDesc,
             price: price,
@@ -32,7 +38,7 @@ transaction(
             allowedCountries: allowedCountries,
             quantity: quantity,
             sellerNationality: sellerNationality,
-            seller: self.admin.account.address
+            seller: acct.address
         )
         
         log("Listing created with ID: ".concat(self.listingId.toString()))

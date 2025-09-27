@@ -13,18 +13,29 @@ export interface FlowUser {
 export function useFlow() {
   const [user, setUser] = useState<FlowUser>({ addr: null, loggedIn: false });
   const [loading, setLoading] = useState(false);
-  const { isLoggedIn: isSelfVerified } = useSelfXYZContext();
+  const { isLoggedIn: isSelfVerified, checkExistingVerification } = useSelfXYZContext();
 
   useEffect(() => {
     // Subscribe to user state changes
-    fcl.currentUser().subscribe((user: { addr?: string; loggedIn?: boolean; cid?: string }) => {
-      setUser({
+    fcl.currentUser().subscribe(async (user: { addr?: string; loggedIn?: boolean; cid?: string }) => {
+      const newUser = {
         addr: user.addr || null,
         loggedIn: user.loggedIn || false,
         cid: user.cid
-      });
+      };
+      
+      setUser(newUser);
+      
+      // If user is connected and not already verified, check verification results
+      if (newUser.loggedIn && newUser.addr && !isSelfVerified) {
+        try {
+          await checkExistingVerification(newUser.addr);
+        } catch (error) {
+          console.error('Failed to check existing verification:', error);
+        }
+      }
     });
-  }, []);
+  }, [isSelfVerified, checkExistingVerification]);
 
   const connectWallet = async () => {
     setLoading(true);
