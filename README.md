@@ -1,36 +1,121 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🍠 YAM - Yet Another Marketplace
 
-## Getting Started
+A web3 marketplace built on Flow blockchain featuring fair raffles and direct purchases with privacy-preserving identity verification via Self.xyz.
 
-First, run the development server:
+## ✨ Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- **🎰 Fair Raffles**: One verified entry per person prevents multiple accounts
+- **⚡ Direct Purchases**: Instant transactions on Flow blockchain
+- **🛡️ Identity Verification**: Self.xyz integration for age, country, and uniqueness checks
+- **🏆 Loyalty System**: Points, badges, and reputation for users
+- **🎁 Mystery Drops**: Surprise item reveals and gamification features
+
+## 🚀 Tech Stack
+
+- **Frontend**: Next.js 15 + TypeScript + Tailwind CSS
+- **Blockchain**: Flow Testnet (@onflow/fcl)
+- **Identity**: Self.xyz SDK (mock implementation included)
+- **Styling**: Purple/Orange YAM theme with responsive design
+
+## 🏗️ Project Structure
+
+```
+src/
+├── app/                    # Next.js app directory
+│   ├── page.tsx           # Homepage
+│   ├── layout.tsx         # Root layout with Flow provider
+│   ├── raffles/           # Raffles listing and details
+│   ├── sell/             # Seller dashboard
+│   └── profile/          # User profile
+├── components/           # Reusable UI components
+│   ├── Button.tsx        # Custom button component
+│   ├── Card.tsx          # Card components
+│   ├── Badge.tsx         # Status badges
+│   ├── WalletConnect.tsx # Flow wallet connection
+│   └── FlowProvider.tsx  # Flow FCL provider
+├── hooks/               # Custom React hooks
+│   ├── useFlow.tsx      # Flow wallet connection
+│   ├── useSelfXYZ.tsx   # Identity verification (mock)
+│   ├── useRaffles.tsx   # Raffle management
+│   └── usePurchases.tsx # Direct purchase management
+└── ...
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🛠️ Getting Started
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. **Clone and install dependencies:**
+   ```bash
+   npm install
+   ```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+2. **Start the development server:**
+   ```bash
+   npm run dev
+   ```
 
-## Learn More
+3. **Open [http://localhost:3000](http://localhost:3000)**
 
-To learn more about Next.js, take a look at the following resources:
+## 🔗 Flow Blockchain Setup
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+The app is configured for Flow Testnet:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **FCL Config**: `fcl.config.js` - Flow client configuration
+- **Wallet**: Uses Flow's default discovery wallet for testnet
+- **Contracts**: Mock contract interactions (ready for real Cadence contracts)
 
-## Deploy on Vercel
+## 📱 Pages
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- **`/`** - Homepage with branding and navigation
+- **`/raffles`** - Active raffles listing
+- **`/raffles/[id]`** - Individual raffle details and entry
+- **`/sell`** - Seller dashboard for creating listings
+- **`/profile`** - User profile with reputation and badges
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 🎨 UI Components
+
+- **Theme**: Purple/Orange gradient with glassmorphism effects
+- **Responsive**: Mobile-first design with Tailwind CSS
+- **Components**: Reusable Button, Card, Badge, and WalletConnect components
+
+## 🔧 Development Notes
+
+### Mock Data
+Currently uses mock data for:
+- Raffle listings and details
+- User profiles and reputation
+- Contract interactions
+
+### Flow Integration
+- ✅ Flow FCL client configured
+- ✅ Wallet connection implemented
+- ⏳ Real Cadence contracts (ready to integrate)
+- ⏳ Smart contract deployment scripts
+
+### Self.xyz Integration
+- ✅ Mock identity verification hook
+- ⏳ Real Self.xyz SDK integration (package installation needed)
+
+## 🚀 Deployment
+
+Ready for deployment on Vercel, Netlify, or any Next.js-compatible platform.
+
+```bash
+npm run build
+npm start
+```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+## 📄 License
+
+MIT License - feel free to use this codebase for your own web3 marketplace projects!
+
+---
+
+**Built with ❤️ for the Flow blockchain ecosystem**

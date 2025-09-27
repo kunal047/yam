@@ -10,6 +10,23 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* YAM Theme Colors */
+  --color-yam-purple-50: #f5f3ff;
+  --color-yam-purple-100: #ede9fe;
+  --color-yam-purple-500: #8b5cf6;
+  --color-yam-purple-600: #7c3aed;
+  --color-yam-purple-700: #6d28d9;
+  --color-yam-purple-800: #5b21b6;
+  --color-yam-purple-900: #4c1d95;
+
+  --color-yam-orange-50: #fff7ed;
+  --color-yam-orange-100: #ffedd5;
+  --color-yam-orange-500: #f97316;
+  --color-yam-orange-600: #ea580c;
+  --color-yam-orange-700: #c2410c;
+  --color-yam-orange-800: #9a3412;
+  --color-yam-orange-900: #7c2d12;
 }
 
 @media (prefers-color-scheme: dark) {
