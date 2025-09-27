@@ -27,19 +27,19 @@ export default function SelfXYZModal({ isOpen, onSuccess, onError, onClose }: Se
       try {
         const app = new SelfAppBuilder({
           version: 2,
-          appName: "YAM Marketplace",
-          scope: "yam-marketplace",
-          endpoint: "https://9f6dc6a0912c.ngrok-free.app/api/verify", // Your ngrok public URL
+          appName: "Yam Marketplace",
+          scope: "yam-marketplace", // Must match backend scope
+          endpoint: "https://82ac421dc420.ngrok-free.app/api/verify", // Your ngrok public URL
           logoBase64: "https://i.postimg.cc/mrmVf9hm/self.png", // Using placeholder logo
           userId: userId,
-          endpointType: "staging_https",
+          endpointType: "https",
           userIdType: "uuid", // Must match backend userIdentifierType
-          userDefinedData: "YAM Marketplace Verification",
+          userDefinedData: "Hello World",
           disclosures: {
             minimumAge: 18,
             nationality: true,
             gender: true,
-            ofac: true,
+            ofac: false, // Must match backend
           }
         }).build();
 

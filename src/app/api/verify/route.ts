@@ -3,14 +3,14 @@ import { SelfBackendVerifier, AllIds, DefaultConfigStore } from "@selfxyz/core";
 
 // Reuse a single verifier instance
 const selfBackendVerifier = new SelfBackendVerifier(
-  "yam-marketplace",
-  "https://playground.self.xyz/api/verify", // Self.xyz playground endpoint
-  true, // mockPassport: true = staging/testnet, false = mainnet
+  "yam-marketplace", // Use the playground's default scope
+  "https://82ac421dc420.ngrok-free.app/api/verify", // Must match frontend endpoint
+  false, // mockPassport: false = mainnet, true = staging/testnet
   AllIds, // Now supports Aadhaar (3) in the new version
   new DefaultConfigStore({
     minimumAge: 18,
-    excludedCountries: ["IRN","PRK","RUS","SYR"], // from documentation example
-    ofac: true, // from documentation example
+    excludedCountries: [], // from documentation example
+    ofac: false, // Disable OFAC checks to match circuit
   }),
   "uuid" // userIdentifierType - must match frontend userIdType
 );

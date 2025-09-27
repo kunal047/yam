@@ -11,8 +11,8 @@
   "dependencies": {
     "@onflow/fcl": "^1.20.1",
     "@onflow/types": "^1.4.2",
-    "@selfxyz/core": "1.1.0-beta.6",
-    "@selfxyz/qrcode": "^1.0.11",
+    "@selfxyz/core": "^1.1.0-beta.6",
+    "@selfxyz/qrcode": "^1.0.15",
     "ethers": "^6.15.0",
     "next": "15.5.4",
     "react": "19.1.0",
