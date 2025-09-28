@@ -221,7 +221,7 @@ export default function ListingDetailPage({ params }: ListingPageProps) {
               <div className="bg-white p-4 rounded-lg border border-gray-200">
                 <h3 className="font-semibold text-gray-900 mb-4">Raffle Progress</h3>
                 <div className="space-y-4">
-                  <div className="flex justify-between text-sm">
+                  <div className="flex justify-between text-sm text-black">
                     <span>Participants: {listing.participants?.length || 0}</span>
                     <span>1 winner</span>
                   </div>
