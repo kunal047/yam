@@ -17,6 +17,8 @@ YAM is a Web3 marketplace that combines:
 YAMListings Contract: 0x1f67c2e66c7e3ee3
 ```
 
+**Contract Explorer**: [View on Flow Testnet](https://testnet.flowscan.io/contract/A.1f67c2e66c7e3ee3.YAMListings)
+
 ### Network Details
 - **Testnet**: `access.devnet.nodes.onflow.org:9000`
 - **Mainnet**: `access.mainnet.nodes.onflow.org:9000`
@@ -219,9 +221,3 @@ For issues and questions:
 - **Self.xyz Documentation**: https://docs.self.xyz/
 - **Next.js Documentation**: https://nextjs.org/docs
 - **Cadence Language**: https://docs.onflow.org/cadence/
-
----
-
-**Contract Address**: `0x1f67c2e66c7e3ee3`  
-**Network**: Flow Testnet  
-**Last Updated**: January 2025
