@@ -1,110 +1,197 @@
-# 🍠 YAM - Yet Another Marketplace
+# YAM Marketplace 🍠
 
-A web3 marketplace built on Flow blockchain featuring fair raffles and direct purchases with privacy-preserving identity verification via Self.xyz.
+A decentralized marketplace built on the Flow blockchain with Self.xyz identity verification. YAM allows users to create listings, buy items, and participate in raffles with verified identities.
 
-## ✨ Features
+## 🏗️ Architecture
 
-- **🎰 Fair Raffles**: One verified entry per person prevents multiple accounts
-- **⚡ Direct Purchases**: Instant transactions on Flow blockchain
-- **🛡️ Identity Verification**: Self.xyz integration for age, country, and uniqueness checks
-- **🏆 Loyalty System**: Points, badges, and reputation for users
-- **🎁 Mystery Drops**: Surprise item reveals and gamification features
+YAM is a Web3 marketplace that combines:
+- **Flow Blockchain** for decentralized transactions
+- **Self.xyz** for privacy-preserving identity verification
+- **Next.js 15.5.4** with Turbopack for the frontend
+- **Cadence** smart contracts for marketplace logic
 
-## 🚀 Tech Stack
+## 📋 Contract Information
 
-- **Frontend**: Next.js 15 + TypeScript + Tailwind CSS
-- **Blockchain**: Flow Testnet (@onflow/fcl)
-- **Identity**: Self.xyz SDK (@selfxyz/qrcode, @selfxyz/core, ethers)
-- **Styling**: Purple/Orange YAM theme with responsive design
+### Flow Contract Address
+```
+YAMListings Contract: 0x1f67c2e66c7e3ee3
+```
 
-## 🏗️ Project Structure
+### Network Details
+- **Testnet**: `access.devnet.nodes.onflow.org:9000`
+- **Mainnet**: `access.mainnet.nodes.onflow.org:9000`
+- **Emulator**: `127.0.0.1:3569`
 
+### Contract Features
+- Create and manage item listings
+- Direct purchase functionality
+- Raffle system with random winner selection
+- Country-based restrictions
+- Seller verification system
+- Escrow management for secure transactions
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Node.js 18+ 
+- Flow CLI
+- Self.xyz account for identity verification
+
+### Installation
+
+1. **Clone the repository**
+```bash
+git clone <repository-url>
+cd yam
+```
+
+2. **Install dependencies**
+```bash
+npm install
+```
+
+3. **Set up Flow CLI**
+```bash
+# Install Flow CLI (if not already installed)
+sh -ci "$(curl -fsSL https://storage.googleapis.com/flow-cli/install.sh)"
+
+# Start Flow emulator
+flow emulator start
+```
+
+4. **Deploy contracts**
+```bash
+# Deploy to emulator
+flow project deploy --network emulator
+
+# Deploy to testnet
+flow project deploy --network testnet
+```
+
+5. **Start development server**
+```bash
+npm run dev
+```
+
+## 🔧 Configuration
+
+### Environment Variables
+Create a `.env.local` file with:
+```env
+NEXT_PUBLIC_FLOW_NETWORK=testnet
+NEXT_PUBLIC_SELF_APP_NAME=YAM Marketplace
+NEXT_PUBLIC_SELF_SCOPE=yam-marketplace
+NEXT_PUBLIC_SELF_ENDPOINT=https://your-ngrok-url.ngrok.io/api/verify
+```
+
+### Flow Configuration
+The project uses `flow.json` for contract deployment and account management. Key accounts:
+- **yam-marketplace**: `0x1f67c2e66c7e3ee3` (Main contract account)
+- **default**: User account for transactions
+
+## 🎯 Key Features
+
+### Identity Verification
+- **Self.xyz Integration**: Privacy-preserving KYC using zero-knowledge proofs
+- **QR Code Scanning**: Simple mobile verification process
+- **Age & Nationality Verification**: Ensures compliance and eligibility
+
+### Marketplace Functions
+- **Create Listings**: Sellers can list items with detailed descriptions
+- **Direct Purchase**: Instant buy functionality for available items
+- **Raffle System**: Limited-quantity raffles with random winner selection
+- **Country Restrictions**: Sellers can restrict sales to specific countries
+- **Escrow System**: Secure fund holding until transaction completion
+
+### Smart Contract Functions
+```cadence
+// Core functions available in the contract
+pub fun createListing(...)     // Create new item listing
+pub fun buyListing(...)       // Purchase item directly
+pub fun enterRaffle(...)       // Enter raffle for item
+pub fun pickWinners(...)       // Admin picks raffle winners
+pub fun verifySeller(...)      // Admin verifies seller identity
+```
+
+## 🛠️ Development
+
+### Project Structure
 ```
 src/
-├── app/                    # Next.js app directory
-│   ├── page.tsx           # Homepage
-│   ├── layout.tsx         # Root layout with Flow provider
-│   ├── raffles/           # Raffles listing and details
-│   ├── sell/             # Seller dashboard
-│   └── profile/          # User profile
-├── components/           # Reusable UI components
-│   ├── Button.tsx        # Custom button component
-│   ├── Card.tsx          # Card components
-│   ├── Badge.tsx         # Status badges
-│   ├── WalletConnect.tsx # Flow wallet connection
-│   └── FlowProvider.tsx  # Flow FCL provider
-├── hooks/               # Custom React hooks
-│   ├── useFlow.tsx      # Flow wallet connection
-│   ├── useSelfXYZ.tsx   # Identity verification (mock)
-│   ├── useRaffles.tsx   # Raffle management
-│   └── usePurchases.tsx # Direct purchase management
-└── ...
+├── app/                    # Next.js app router pages
+│   ├── api/               # API routes for verification
+│   ├── buy/               # Browse listings
+│   ├── sell/              # Create listings
+│   └── profile/           # User profile
+├── components/            # React components
+├── hooks/                 # Custom React hooks
+├── contexts/              # React context providers
+└── contracts/             # Cadence smart contracts
 ```
 
-## 🛠️ Getting Started
+### Key Components
+- **SelfXYZModal**: Identity verification with QR code
+- **CreateListingForm**: Form for creating new listings
+- **WalletConnect**: Flow wallet connection
+- **useListings**: Hook for blockchain interactions
 
-1. **Clone and install dependencies:**
-   ```bash
-   npm install
-   ```
-
-2. **Start the development server:**
-   ```bash
-   npm run dev
-   ```
-
-3. **Open [http://localhost:3000](http://localhost:3000)**
-
-## 🔗 Flow Blockchain Setup
-
-The app is configured for Flow Testnet:
-
-- **FCL Config**: `fcl.config.js` - Flow client configuration
-- **Wallet**: Uses Flow's default discovery wallet for testnet
-- **Contracts**: Mock contract interactions (ready for real Cadence contracts)
-
-## 📱 Pages
-
-- **`/`** - Homepage with branding and navigation
-- **`/raffles`** - Active raffles listing
-- **`/raffles/[id]`** - Individual raffle details and entry
-- **`/sell`** - Seller dashboard for creating listings
-- **`/profile`** - User profile with reputation and badges
-
-## 🎨 UI Components
-
-- **Theme**: Purple/Orange gradient with glassmorphism effects
-- **Responsive**: Mobile-first design with Tailwind CSS
-- **Components**: Reusable Button, Card, Badge, and WalletConnect components
-
-## 🔧 Development Notes
-
-### Mock Data
-Currently uses mock data for:
-- Raffle listings and details
-- User profiles and reputation
-- Contract interactions
-
-### Flow Integration
-- ✅ Flow FCL client configured
-- ✅ Wallet connection implemented
-- ⏳ Real Cadence contracts (ready to integrate)
-- ⏳ Smart contract deployment scripts
-
-### Self.xyz Integration
-- ✅ Real Self.xyz SDK integration (@selfxyz/qrcode, @selfxyz/core)
-- ✅ QR code generation and verification
-- ✅ Backend verification API route
-- ✅ Modal-based verification flow
-- ✅ Scope and configuration matching between frontend/backend
-
-## 🚀 Deployment
-
-Ready for deployment on Vercel, Netlify, or any Next.js-compatible platform.
-
+### Testing
 ```bash
+# Run tests
+npm test
+
+# Test contract deployment
+flow project deploy --network testnet
+```
+
+## 🔐 Security Features
+
+### Identity Verification
+- Zero-knowledge proofs ensure privacy
+- Age and nationality verification
+- OFAC compliance checking
+- Unique nullifier prevents double-spending
+
+### Smart Contract Security
+- Resource-based ownership model
+- Admin controls for verification
+- Escrow system for fund security
+- Country restriction enforcement
+
+## 📱 Usage
+
+### For Sellers
+1. Connect Flow wallet
+2. Verify identity with Self.xyz
+3. Create listing with item details
+4. Set price and restrictions
+5. Choose direct sale or raffle
+
+### For Buyers
+1. Browse available listings
+2. Verify identity with Self.xyz
+3. Connect Flow wallet
+4. Purchase items or enter raffles
+5. Receive items after verification
+
+## 🌐 Deployment
+
+### Frontend Deployment
+```bash
+# Build for production
 npm run build
-npm start
+
+# Deploy to Vercel
+vercel deploy
+```
+
+### Contract Deployment
+```bash
+# Deploy to testnet
+flow project deploy --network testnet
+
+# Deploy to mainnet
+flow project deploy --network mainnet
 ```
 
 ## 🤝 Contributing
@@ -117,8 +204,24 @@ npm start
 
 ## 📄 License
 
-MIT License - feel free to use this codebase for your own web3 marketplace projects!
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 🆘 Support
+
+For issues and questions:
+- Create an issue in the repository
+- Check the Flow documentation
+- Review Self.xyz integration guides
+
+## 🔗 Links
+
+- **Flow Documentation**: https://docs.onflow.org/
+- **Self.xyz Documentation**: https://docs.self.xyz/
+- **Next.js Documentation**: https://nextjs.org/docs
+- **Cadence Language**: https://docs.onflow.org/cadence/
 
 ---
 
-**Built with ❤️ for the Flow blockchain ecosystem**
+**Contract Address**: `0x1f67c2e66c7e3ee3`  
+**Network**: Flow Testnet  
+**Last Updated**: January 2025

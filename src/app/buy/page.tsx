@@ -16,7 +16,7 @@ const getPlaceholderImage = (title: string) => {
 
 export default function BuyPage() {
   const { isLoggedIn } = useSelfXYZContext();
-  const { isConnected } = useFlow();
+  const { } = useFlow();
   const { getActiveListings, loading: listingsLoading } = useListings();
   
   const [listings, setListings] = useState<any[]>([]);
@@ -258,7 +258,7 @@ export default function BuyPage() {
                   Self.xyz Verification Required
                 </h3>
                 <p className="text-yellow-700 mb-3">
-                  To purchase items or enter raffles, you'll need to verify your identity using Self.xyz first.
+                  To purchase items or enter raffles, you&apos;ll need to verify your identity using Self.xyz first.
                   This ensures trust and prevents fraud.
                 </p>
                 <div className="text-sm text-yellow-600">

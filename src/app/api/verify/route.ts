@@ -71,7 +71,7 @@ export async function POST(req: Request) {
       console.log("Normalized sessionId:", normalizedSessionId);
       
       // Find by direct key lookup using normalized userIdentifier
-      let foundResult = verificationResults[normalizedSessionId];
+      const foundResult = verificationResults[normalizedSessionId];
       
       if (foundResult) {
         console.log("Returning stored verification result:", JSON.stringify(foundResult, null, 2));

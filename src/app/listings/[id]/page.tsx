@@ -24,7 +24,18 @@ export default function ListingDetailPage({ params }: ListingPageProps) {
   const { isConnected, connectWallet, loading: walletLoading } = useFlow();
   const { buyListing, enterRaffle, getListing } = useListings();
   const [transactionLoading, setTransactionLoading] = useState(false);
-  const [listing, setListing] = useState<any>(null);
+  const [listing, setListing] = useState<{
+    id: string;
+    itemName: string;
+    price: string;
+    type: string;
+    isActive: boolean;
+    participants?: string[];
+    entries?: string[];
+    deadline?: number;
+    seller?: string;
+    sellerVerified?: boolean;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

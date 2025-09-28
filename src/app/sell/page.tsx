@@ -16,7 +16,7 @@ export default function SellPage() {
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
-  const handleFormSuccess = (listingId: string, transactionId: string) => {
+  const handleFormSuccess = (listingId: string) => {
     setSuccessMessage(`Listing created successfully! ID: ${listingId}`);
     setShowForm(false);
     setErrorMessage("");

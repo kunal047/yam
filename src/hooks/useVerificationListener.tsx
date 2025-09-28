@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useSelfXYZContext } from "@/contexts/SelfXYZContext";
 
 export function useVerificationListener() {
-  const { updateVerificationFromAPI, loading } = useSelfXYZContext();
+  const { updateVerificationFromAPI } = useSelfXYZContext();
 
   useEffect(() => {
     // Listen for verification completion events
